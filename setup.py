@@ -38,7 +38,7 @@ setup(
 		'plone.i18n',
 	],
 	extras_require={
-		'test'=[
+		'test':[
 			'nose2',
 		]
 	},
