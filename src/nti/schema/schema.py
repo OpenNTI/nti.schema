@@ -595,27 +595,27 @@ class HTTPURL(ValidURI):
 
 		return result
 
-from . import dataurl
+# from . import dataurl
 
-class DataURI(ValidURI):
-	"""
-	A URI field that ensures and requires its value to be
-	a data URI. The field value is a :class:`.DataURL`.
-	"""
+# class DataURI(ValidURI):
+# 	"""
+# 	A URI field that ensures and requires its value to be
+# 	a data URI. The field value is a :class:`.DataURL`.
+# 	"""
 
-	def _validate(self, value):
-		super(DataURI,self)._validate(value)
-		if not value.startswith(b'data:'):
-			self._reraise_validation_error( sch_interfaces.InvalidURI(value),
-											value,
-											_raise=True )
+# 	def _validate(self, value):
+# 		super(DataURI,self)._validate(value)
+# 		if not value.startswith(b'data:'):
+# 			self._reraise_validation_error( sch_interfaces.InvalidURI(value),
+# 											value,
+# 											_raise=True )
 
-	def fromUnicode( self, value ):
-		if isinstance(value,dataurl.DataURL):
-			return value
+# 	def fromUnicode( self, value ):
+# 		if isinstance(value,dataurl.DataURL):
+# 			return value
 
-		super(DataURI, self).fromUnicode(value)
-		return dataurl.DataURL(value)
+# 		super(DataURI, self).fromUnicode(value)
+# 		return dataurl.DataURL(value)
 
 class _ValueTypeAddingDocMixin(object):
 	"""

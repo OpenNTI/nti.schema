@@ -26,18 +26,18 @@ does_not = is_not
 from nti.testing.matchers import verifiably_provides, validated_by, not_validated_by
 from nti.testing.base import module_setup, module_teardown
 
-from nti.utils.schema import HTTPURL, Variant, ObjectLen, Object
-from nti.utils.schema import DataURI
-from nti.utils.schema import IVariant
-from nti.utils.schema import Number
-from nti.utils.schema import DictFromObject
-from nti.utils.schema import ListOrTuple
-from nti.utils.schema import ValidRegularExpression
-from nti.utils.schema import ValidTextLine as TextLine
-from nti.utils.schema import IBeforeSequenceAssignedEvent
-from nti.utils.schema import IBeforeDictAssignedEvent
-from nti.utils.schema import createFieldProperties
-from nti.utils.schema import createDirectFieldProperties
+from ..schema import HTTPURL, Variant, ObjectLen, Object
+#from ..schema import DataURI
+from ..schema import IVariant
+from ..schema import Number
+from ..schema import DictFromObject
+from ..schema import ListOrTuple
+from ..schema import ValidRegularExpression
+from ..schema import ValidTextLine as TextLine
+from ..schema import IBeforeSequenceAssignedEvent
+from ..schema import IBeforeDictAssignedEvent
+from ..schema import createFieldProperties
+from ..schema import createDirectFieldProperties
 
 from dolmen.builtins import IUnicode
 from zope import interface
@@ -46,6 +46,8 @@ from zope.interface.common import interfaces as cmn_interfaces
 from zope.schema import interfaces as sch_interfaces
 from zope.schema import Dict
 from zope.schema.interfaces import InvalidURI
+
+# XXX: TODO: Convert these into a class
 
 def test_http_url():
 
@@ -65,14 +67,14 @@ def test_http_url():
 	assert_that( ex.exception, has_property( 'value', 'mailto:jason@nextthought.com' ) )
 	assert_that( ex.exception, has_property( 'message', 'The specified URI is not valid.' ) )
 
-def test_data_uri():
-	from .test_dataurl import GIF_DATAURL
-	field = DataURI(__name__='foo')
+# def test_data_uri():
+# 	from .test_dataurl import GIF_DATAURL
+# 	field = DataURI(__name__='foo')
 
-	url = field.fromUnicode(GIF_DATAURL)
+# 	url = field.fromUnicode(GIF_DATAURL)
 
-	assert_that( url, has_property( 'mimeType', 'image/gif') )
-	assert_that( url, has_property( 'data', is_not( none() ) ) )
+# 	assert_that( url, has_property( 'mimeType', 'image/gif') )
+# 	assert_that( url, has_property( 'data', is_not( none() ) ) )
 
 def test_regex():
 	field = ValidRegularExpression('[bankai|shikai]', flags=0)
@@ -238,7 +240,7 @@ def test_create_direct_field_properties():
 	assert_that( B.__dict__, has_length( 5 ) )
 
 
-@with_setup( setup=lambda: module_setup( ('nti.utils',) ), teardown=module_teardown )
+@with_setup( setup=lambda: module_setup( ('nti.schema',) ), teardown=module_teardown )
 def test_country_vocabulary():
 	from zope.schema import Choice
 	class IA(interface.Interface):

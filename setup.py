@@ -34,6 +34,8 @@ setup(
 	install_requires=[
 		'setuptools',
 		'zope.schema',
+		'zope.i18nmessageid',
+		'dm.zope.schema',
 		'dolmen.builtins',
 		'plone.i18n',
 	],
