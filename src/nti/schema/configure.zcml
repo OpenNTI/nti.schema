@@ -13,9 +13,9 @@
 	<include package="plone.i18n" />
 	<include package="zope.vocabularyregistry" />
 
-	<subscriber handler=".schema.before_object_assigned_event_dispatcher" />
+	<subscriber handler=".subscribers.before_object_assigned_event_dispatcher" />
 
-	<utility component=".schema.CountryVocabularyFactory"
+	<utility component=".vocabulary.CountryVocabularyFactory"
 			 provides="zope.schema.interfaces.IVocabularyFactory"
 			 name="Countries" />
 

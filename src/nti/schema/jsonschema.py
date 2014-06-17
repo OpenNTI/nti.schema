@@ -26,7 +26,7 @@ from zope import interface
 from zope.schema import interfaces as sch_interfaces
 from zope.schema import vocabulary as sch_vocabulary
 
-from .schema import find_most_derived_interface
+from .interfaces import find_most_derived_interface
 
 def _ui_type_from_field_iface( field ):
 	derived_field_iface = find_most_derived_interface( field, sch_interfaces.IField )
