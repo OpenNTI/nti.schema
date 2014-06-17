@@ -16,56 +16,12 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-from . import MessageFactory as _
 
-import re
-import sys
-
-from dm.zope.schema.schema import SchemaConfigured, schemadict, Object as ObjectBase
-ObjectBase.check_declaration = True
-
-import zope.interface.common.idatetime
 from zope import interface
 from zope import schema
-from zope import component
-from zope.component import handle
-from zope.event import notify
+
 from zope.schema import interfaces as sch_interfaces
 
-from zope.schema.fieldproperty import FieldProperty
-from zope.schema.fieldproperty import FieldPropertyStoredThroughField
-# Re-export some things as part of our public API so we can
-# later re-implement them locally if needed
-from zope.schema.fieldproperty import createFieldProperties
-from zope.schema import Bool
-Bool = Bool
-from zope.schema import Date
-Date = Date
-from zope.schema import Datetime
-Datetime = Datetime
-DateTime = Datetime
-from zope.schema import Decimal
-Decimal = Decimal
-from zope.schema import Dict
-Dict = Dict
-from zope.schema import List
-List = List
-from zope.schema import Text
-Text = Text
-from zope.schema import TextLine
-TextLine = TextLine
-from zope.schema import Timedelta
-Timedelta = Timedelta
-from zope.schema import Choice
-Choice = Choice
-from zope.schema import Tuple
-Tuple = Tuple
-from zope.schema import FrozenSet
-FrozenSet = FrozenSet
-from zope.schema import Set
-Set = Set
-from zope.schema import Iterable
-Iterable = Iterable
 
 
 class IBeforeSchemaFieldAssignedEvent(interface.Interface):
