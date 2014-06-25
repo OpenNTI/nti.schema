@@ -68,11 +68,18 @@ def EqHash(*names):
 			h ^= hash(getter(self))
 			return h
 
-		return __eq__, __hash__
+		def __ne__(self, other):
+			try:
+				return self is not other and (getter(self) != getter(other))
+			except AttributeError:
+				return True
+
+		return __eq__, __hash__, __ne__
 
 	def x(cls):
-		__eq__, __hash__ = _eq_hash(*names)
+		__eq__, __hash__, __ne__ = _eq_hash(*names)
 		cls.__eq__ = __eq__
 		cls.__hash__ = __hash__
+		cls.__ne__ = __ne__
 		return cls
 	return x
