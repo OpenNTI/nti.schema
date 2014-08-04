@@ -62,6 +62,8 @@ def _superhash(value):
 	else:
 		return value
 
+import __builtin__
+
 def EqHash(*names,
 		   **kwargs):
 	"""
@@ -90,26 +92,49 @@ def EqHash(*names,
 
 	"""
 
-	include_super = kwargs.pop('include_super', False)
+	_include_super = kwargs.pop('include_super', False)
 	superhash = kwargs.pop("superhash", False)
-	include_type = kwargs.pop('include_type', False)
+	_include_type = kwargs.pop('include_type', False)
 
 	if kwargs:
 		raise TypeError("Unexpected keyword args", kwargs)
-	if not names and not include_super and not include_type:
+	if not names and not _include_super and not _include_type:
 		raise TypeError("Asking to hash/eq nothing, but not including super or type")
 
-	def _eq_hash(cls, *names):
+	def _eq_hash(cls, *names): # pylint:disable=I0011,W0622,R0912
+
+		# Some micro-opts for the clousure:
+		# - avoid loading globals, deref is slightly faster
+		isinstance = __builtin__.isinstance
+		getattr =  __builtin__.getattr
+		NotImplemented =  __builtin__.NotImplemented
+		AttributeError =  __builtin__.AttributeError
+		hash = __builtin__.hash
+		tuple = __builtin__.tuple
+
+		# only one level of closure
+		include_super = _include_super
+		include_type = _include_type
+
+		# We assume the class hierarchy of these objects does not change
+		if include_super:
+			superclass = cls.__mro__[1]
+			superclass_eq = superclass.__eq__
+			superclass_hash = superclass.__hash__
+
+		# 1 and 0 are constants and faster to load than the globals True/False
+		# (in python 2)
+
 		def __eq__(self, other):
 			if self is other:
-				return True
+				return 1
 
 			if include_type:
 				if not isinstance(other, cls):
-					return False
+					return 0
 
 			if include_super:
-				s = super(cls, self).__eq__(other)
+				s = superclass_eq(self, other)
 				if s is NotImplemented or not s:
 					return s
 
@@ -120,22 +145,26 @@ def EqHash(*names,
 			# a mismatch early. Also, it lets us easily distinguish
 			# between an AttributeError on self (which is a
 			# programming error in calling EqHash) or the other object
+			_ga = getattr # load_fast in the loop
 			for name in names:
-				my_val = getattr(self, name)
+				my_val = _ga(self, name)
 				try:
-					other_val = getattr(other, name)
+					other_val =_ga(other, name)
 				except AttributeError:
 					return NotImplemented
 				else:
+					# Amusingly, even though this does
+					# more push/pop than inlining in the
+					# body of the try block, it benchmarks
+					# faster
 					if my_val != other_val:
-						return False
-			return True
-
+						return 0
+			return 1
 
 		def __ne__(self, other):
 			eq = __eq__(self, other)
 			if eq is NotImplemented:
-				return NotImplemented
+				return eq
 			return not eq
 
 		# Our contract for include_super says that hashing
@@ -157,13 +186,14 @@ def EqHash(*names,
 		def __hash__(self):
 			h = seed
 			if include_super:
-				h ^= super(cls, self).__hash__() << 2
+				h ^= superclass_hash(self) << 2
 
 			# If we or-equal for every attribute separately, we
 			# easily run the risk of saturating the integer. So we boil
 			# all attributes down to one value to hash
 			if names:
-				h ^= _hash( [getattr(self, name) for name in names] )
+				ga = getattr
+				h ^= _hash( [ga(self, name) for name in names] )
 			return h
 
 		return __eq__, __hash__, __ne__
