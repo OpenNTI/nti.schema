@@ -51,9 +51,7 @@ from zope.schema import interfaces as sch_interfaces
 from zope.schema import Dict
 from zope.schema.interfaces import InvalidURI
 
-# XXX: TODO: Convert these into a class
-
-class TestStandalone(unittest.TestCase):
+class TestMisc(unittest.TestCase):
 
 
 	def test_objectlen(self):
@@ -333,3 +331,30 @@ else:
 
 			foo.ob = BazAQ()
 			assert_that( foo, has_property( 'ob', aq_inContextOf( foo ) ) )
+
+
+from ..schema import _superhash as superhash
+
+class TestSuperHash(unittest.TestCase):
+
+	def test_iterable(self):
+		assert_that(hash(superhash([1, 3, 5])),
+					is_(hash(superhash([x for x in [1, 3, 5]]))))
+
+		assert_that(superhash([1, 2]), is_not(superhash([2, 1])))
+		assert_that(hash(superhash([1, 2])), is_not(hash(superhash([2, 1]))))
+
+	def test_nested_dict(self):
+		d = {1: 1,
+			 2: [1, 2, 3],
+			 3: {4: [4, 5, 6]}}
+
+		assert_that(superhash(d),
+					is_(
+						((1,1),
+						 (2, (1, 2, 3)),
+						 (3, ((4, (4, 5, 6)),)))
+					))
+
+		assert_that(hash(superhash(d)),
+					is_(-6213620179105025536) )
