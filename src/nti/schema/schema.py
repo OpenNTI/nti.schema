@@ -14,8 +14,6 @@ logger = __import__('logging').getLogger(__name__)
 from dm.zope.schema.schema import SchemaConfigured, schemadict, Object as ObjectBase
 ObjectBase.check_declaration = True
 
-import operator
-
 class PermissiveSchemaConfigured(SchemaConfigured):
 	"""
 	A mixin subclass of :class:`SchemaConfigured` that allows
@@ -83,37 +81,56 @@ def EqHash(*names,
 		mutable types (lists and dictionaries) that ordinarily cannot
 		be hashed. Use this only when those items are functionally
 		treated as immutable.
+	:keyword include_type: If set to ``True`` (*not* the default),
+		equality will only be true if the other object is an instance
+		of the class this is declared on. Use this only when there are
+		a series of subclasses who differ in no attributes but should not
+		compare equal to each other. Note that this can lead to violating
+		the commutative property.
 
 	"""
 
 	include_super = kwargs.pop('include_super', False)
 	superhash = kwargs.pop("superhash", False)
+	include_type = kwargs.pop('include_type', False)
+
+	if kwargs:
+		raise TypeError("Unexpected keyword args", kwargs)
+	if not names and not include_super and not include_type:
+		raise TypeError("Asking to hash/eq nothing, but not including super or type")
 
 	def _eq_hash(cls, *names):
-		# getter returns a tuple, which can be equality
-		# checked and hashed, if its members are
-		getter = operator.attrgetter(*names)
-
 		def __eq__(self, other):
 			if self is other:
 				return True
+
+			if include_type:
+				if not isinstance(other, cls):
+					return False
 
 			if include_super:
 				s = super(cls, self).__eq__(other)
 				if s is NotImplemented or not s:
 					return s
 
-			try:
-				# Rather than use the results of the getter,
-				# we take these one at a time. In the cases where
-				# some attributes are computed, this can be more efficient
-				# if we discover a mismatch early
-				for name in names:
-					if getattr(self, name) != getattr(other, name):
+
+			# We take these one at a time (rather than using
+			# operator.attrgetter). In the cases where some attributes
+			# are computed, this can be more efficient if we discover
+			# a mismatch early. Also, it lets us easily distinguish
+			# between an AttributeError on self (which is a
+			# programming error in calling EqHash) or the other object
+			for name in names:
+				my_val = getattr(self, name)
+				try:
+					other_val = getattr(other, name)
+				except AttributeError:
+					return NotImplemented
+				else:
+					if my_val != other_val:
 						return False
-				return True
-			except AttributeError:
-				return NotImplemented
+			return True
+
 
 		def __ne__(self, other):
 			eq = __eq__(self, other)
@@ -123,8 +140,9 @@ def EqHash(*names,
 
 		# Our contract for include_super says that hashing
 		# may or may not be included. It shouldn't affect the results
-		# if we do not actually include it, so we don't for simplicity
-		# and speed
+		# if we do not actually include it, unless there are no values
+		# being hashed from this object. However, for consistency,
+		# we always include it if asked
 		seed = hash(names)
 
 		if superhash:
@@ -133,11 +151,19 @@ def EqHash(*names,
 				# for each value; we could probably do better?
 				return hash( tuple([_superhash(x) for x in values]) )
 		else:
-			_hash = hash
+			def _hash(values):
+				return hash(tuple(values))
 
 		def __hash__(self):
 			h = seed
-			h ^= _hash(getter(self))
+			if include_super:
+				h ^= super(cls, self).__hash__() << 2
+
+			# If we or-equal for every attribute separately, we
+			# easily run the risk of saturating the integer. So we boil
+			# all attributes down to one value to hash
+			if names:
+				h ^= _hash( [getattr(self, name) for name in names] )
 			return h
 
 		return __eq__, __hash__, __ne__
