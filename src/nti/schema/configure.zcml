@@ -13,6 +13,11 @@
 	<include package="plone.i18n" />
 	<include package="zope.vocabularyregistry" />
 
+	<!-- I18N -->
+	<include package="zope.i18n" file="meta.zcml" />
+	<i18n:registerTranslations directory="locales" />
+
+
 	<subscriber handler=".subscribers.before_object_assigned_event_dispatcher" />
 
 	<utility component=".vocabulary.CountryVocabularyFactory"
