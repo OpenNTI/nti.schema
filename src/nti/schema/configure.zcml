@@ -7,9 +7,9 @@
 	<include package="zope.security" file="meta.zcml" />
 	<include package="zope.component" />
 
+
 	<!-- browser:resourceDirectory directive, used by plone.i18n -->
 	<include package="zope.browserresource" file="meta.zcml" />
-
 	<include package="plone.i18n" />
 	<include package="zope.vocabularyregistry" />
 

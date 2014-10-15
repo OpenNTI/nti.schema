@@ -25,8 +25,6 @@ setup(
 		'Operating System :: OS Independent',
 		'Programming Language :: Python :: 2',
 		'Programming Language :: Python :: 2.7',
-		'Programming Language :: Python :: 3',
-		'Programming Language :: Python :: 3.4',
 		'Framework :: Zope3'
 		],
 	packages=find_packages('src'),
@@ -35,13 +33,19 @@ setup(
 		'setuptools',
 		'zope.schema',
 		'zope.i18nmessageid',
-		'dm.zope.schema',
+		'zope.browserresource',
+		'zope.vocabularyregistry',
+		'dm.zope.schema', # PY3: Not  ported yet
 		'dolmen.builtins',
-		'plone.i18n',
+		'plone.i18n', # PY3: Not ported yet
 	],
 	extras_require={
 		'test':[
 			'nose2',
+			'pyhamcrest',
+			'zope.testing',
+			'zope.dottedname',
+			'transaction'
 		]
 	},
 	namespace_packages=['nti'],

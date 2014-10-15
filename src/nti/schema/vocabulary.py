@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Vocabularies and factories for use in schema fields.
+Vocabularies and factories for use in schema fields,
 
 $Id$
 """
@@ -14,7 +14,10 @@ from zope import component
 
 from zope.schema.vocabulary import SimpleTerm as _SimpleTerm
 from zope.schema.vocabulary import SimpleVocabulary as _SimpleVocabulary
-from plone.i18n.locales.interfaces import ICountryAvailability as _ICountryAvailability
+try:
+	from plone.i18n.locales.interfaces import ICountryAvailability as _ICountryAvailability
+except ImportError:
+	_ICountryAvailability = None
 
 class CountryTerm(_SimpleTerm):
 	"""
@@ -52,5 +55,8 @@ class _CountryVocabulary(_SimpleVocabulary):
 		return token in self.by_token
 
 def CountryVocabularyFactory( context ):
+	"""
+	A vocabulary factory, if plone.i18n is available.
+	"""
 	countries = component.getUtility( _ICountryAvailability )
 	return _CountryVocabulary( [CountryTerm.fromItem( item ) for item in countries.getCountries().items()] )

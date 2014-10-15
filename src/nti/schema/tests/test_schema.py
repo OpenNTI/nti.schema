@@ -25,7 +25,7 @@ from hamcrest import has_item
 import unittest
 does_not = is_not
 
-from nti.testing.matchers import verifiably_provides, validated_by, not_validated_by
+from nti.schema.testing import verifiably_provides, validated_by, not_validated_by
 
 
 from ..field import HTTPURL, Variant, ObjectLen, Object
@@ -101,14 +101,16 @@ class TestMisc(unittest.TestCase):
 		assert_that( http.fromUnicode( 'https://www.yahoo.com' ),
 					 is_( 'https://www.yahoo.com' ) )
 
-		from nose.tools import assert_raises
-		with assert_raises( InvalidURI ) as ex:
+		try:
 			http.fromUnicode( 'mailto:jason@nextthought.com' )
+			self.fail("Must raise")
+		except InvalidURI as ex:
+			exception = ex
 
 
-		assert_that( ex.exception, has_property( 'field', http ) )
-		assert_that( ex.exception, has_property( 'value', 'mailto:jason@nextthought.com' ) )
-		assert_that( ex.exception, has_property( 'message', 'The specified URI is not valid.' ) )
+		assert_that( exception, has_property( 'field', http ) )
+		assert_that( exception, has_property( 'value', 'mailto:jason@nextthought.com' ) )
+		assert_that( exception, has_property( 'message', 'The specified URI is not valid.' ) )
 
 	# def test_data_uri():
 	# 	from .test_dataurl import GIF_DATAURL
@@ -194,8 +196,8 @@ class TestMisc(unittest.TestCase):
 from zope.component import eventtesting
 from zope.testing import cleanup
 
-from nti.testing.layers import ZopeComponentLayer
-from nti.testing.layers import ConfiguringLayerMixin
+from . import ZopeComponentLayer
+from . import ConfiguringLayerMixin
 
 class SchemaLayer(ZopeComponentLayer,
 				  ConfiguringLayerMixin):
