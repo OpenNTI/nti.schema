@@ -53,6 +53,18 @@ from zope.schema.interfaces import InvalidURI
 
 class TestMisc(unittest.TestCase):
 
+	def test_fixup_name(self):
+		from zope.schema.fieldproperty import FieldPropertyStoredThroughField
+
+		field = Object( IUnicode )
+		field.__name__ = 'field'
+
+		field_property = FieldPropertyStoredThroughField(field)
+		field = field_property.field
+
+		assert_that( field, has_property('__name__', '__st_field_st') )
+
+		assert_that( field, has_property('__fixup_name__', 'field'))
 
 	def test_objectlen(self):
 		# If we have the inheritance messed up, we will have problems

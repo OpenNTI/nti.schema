@@ -93,14 +93,24 @@ class FieldValidationMixin(object):
 	A field mixin that causes slightly better errors to be created.
 	"""
 
+	@property
+	def __fixup_name__(self):
+		"""
+		The :class:`zope.schema.fieldproperty.FieldPropertyStoredThroughField` class mangles
+		the field name; this undoes that mangling.
+		"""
+		if self.__name__ and self.__name__.startswith('__st_') and self.__name__.endswith('_st'):
+			return self.__name__[5:-3]
+		return self.__name__
+
 	def _fixup_validation_error_args( self, e, value ):
 		# Called when the exception has one argument, which is usually, though not always,
 		# the message
-		e.args = (value, e.args[0], self.__name__)
+		e.args = (value, e.args[0], self.__fixup_name__)
 
 	def _fixup_validation_error_no_args(self, e, value ):
 		# Called when there are no arguments
-		e.args = (value, str(e), self.__name__ )
+		e.args = (value, str(e), self.__fixup_name__ )
 
 	def _reraise_validation_error(self, e, value, _raise=False):
 		if len(e.args) == 1: # typically the message is the only thing
@@ -109,9 +119,9 @@ class FieldValidationMixin(object):
 			self._fixup_validation_error_no_args( e, value )
 		elif isinstance( e, sch_interfaces.TooShort ) and len(e.args) == 2:
 			# Note we're capitalizing the field in the message.
-			e.i18n_message = _('${field} is too short.', mapping={'field': self.__name__.capitalize(), 'minLength': e.args[1]})
-			e.args = ( self.__name__.capitalize() + ' is too short.',
-					   self.__name__,
+			e.i18n_message = _('${field} is too short.', mapping={'field': self.__fixup_name__.capitalize(), 'minLength': e.args[1]})
+			e.args = ( self.__fixup_name__.capitalize() + ' is too short.',
+					   self.__fixup_name__,
 					   value )
 		e.field = self
 		if not getattr( e, 'value', None):
@@ -147,7 +157,7 @@ class ValidDatetime(FieldValidationMixin,Datetime):
 		try:
 			super(ValidDatetime, self)._validate(value)
 		except sch_interfaces.WrongType as e:
-			raise sch_interfaces.SchemaNotProvided(value, e.__doc__, self.__name__, self.schema, list(interface.providedBy( value ) ))
+			raise sch_interfaces.SchemaNotProvided(value, e.__doc__, self.__fixup_name__, self.schema, list(interface.providedBy( value ) ))
 
 		# schema has to be provided by value
 		if not self.schema.providedBy(value): # pragma: no cover
@@ -156,7 +166,7 @@ class ValidDatetime(FieldValidationMixin,Datetime):
 class Object(FieldValidationMixin,ObjectBase):
 
 	def _fixup_validation_error_no_args(self, e, value ):
-		e.args = (value, e.__doc__, self.__name__, self.schema, list(interface.providedBy( value ) ))
+		e.args = (value, e.__doc__, self.__fixup_name__, self.schema, list(interface.providedBy( value ) ))
 
 
 @interface.implementer(IVariant)
@@ -304,7 +314,7 @@ class ObjectLen(FieldValidationMixin,schema.MinMaxLen,ObjectBase): # order matte
 		super(ObjectLen,self).__init__( schema=sch, min_length=min_length, max_length=max_length, **kwargs )
 
 	def _fixup_validation_error_no_args(self, e, value ):
-		e.args = (value, e.__doc__, self.__name__, self.schema, list(interface.providedBy( value ) ))
+		e.args = (value, e.__doc__, self.__fixup_name__, self.schema, list(interface.providedBy( value ) ))
 
 
 class Int(FieldValidationMixin,schema.Int):
@@ -398,7 +408,7 @@ class ValidURI(FieldValidationMixin,schema.URI):
 		if isinstance( e, sch_interfaces.InvalidURI ):
 			# This class differs by using the value as the argument, not
 			# a message
-			e.args = ( value, e.__doc__, self.__name__ )
+			e.args = ( value, e.__doc__, self.__fixup_name__ )
 			e.message = e.i18n_message = e.__doc__
 		else:
 			super(ValidURI,self)._fixup_validation_error_args( e, value )
