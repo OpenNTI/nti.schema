@@ -318,10 +318,17 @@ class ObjectLen(FieldValidationMixin,schema.MinMaxLen,ObjectBase): # order matte
 
 
 class Int(FieldValidationMixin,schema.Int):
-	pass
+
+	def fromUnicode(self, value):
+		# Allow empty strings
+		result = super(Int, self).fromUnicode(value) if value else None
+		return result
 
 class Float(FieldValidationMixin,schema.Float):
-	pass
+
+	def fromUnicode(self, value):
+		result = super(Float, self).fromUnicode(value) if value else None
+		return result
 
 class Number(FieldValidationMixin,schema.Float):
 	"""
