@@ -415,6 +415,7 @@ class ValidURI(FieldValidationMixin,schema.URI):
 		if isinstance( e, sch_interfaces.InvalidURI ):
 			# This class differs by using the value as the argument, not
 			# a message
+			e.__doc__ = e.__doc__.replace( 'URI', 'URL' )
 			e.args = ( value, e.__doc__, self.__fixup_name__ )
 			e.message = e.i18n_message = e.__doc__
 		else:
