@@ -122,7 +122,7 @@ class TestMisc(unittest.TestCase):
 
 		assert_that( exception, has_property( 'field', http ) )
 		assert_that( exception, has_property( 'value', 'mailto:jason@nextthought.com' ) )
-		assert_that( exception, has_property( 'message', 'The specified URI is not valid.' ) )
+		assert_that( exception, has_property( 'message', 'The specified URL is not valid.' ) )
 
 	# def test_data_uri():
 	# 	from .test_dataurl import GIF_DATAURL
