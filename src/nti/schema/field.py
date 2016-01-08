@@ -119,8 +119,17 @@ class FieldValidationMixin(object):
 			self._fixup_validation_error_no_args( e, value )
 		elif isinstance( e, sch_interfaces.TooShort ) and len(e.args) == 2:
 			# Note we're capitalizing the field in the message.
-			e.i18n_message = _('${field} is too short.', mapping={'field': self.__fixup_name__.capitalize(), 'minLength': e.args[1]})
+			e.i18n_message = _('${field} is too short.',
+								mapping={'field': self.__fixup_name__.capitalize(),
+										'minLength': e.args[1]})
 			e.args = ( self.__fixup_name__.capitalize() + ' is too short.',
+					   self.__fixup_name__,
+					   value )
+		elif isinstance( e, sch_interfaces.TooLong ) and len(e.args) == 2:
+			e.i18n_message = _('${field} is too long. ${max_size} character limit.',
+								mapping={'field': self.__fixup_name__.capitalize(),
+										'max_size': e.args[1]})
+			e.args = ( self.__fixup_name__.capitalize() + ' is too long.',
 					   self.__fixup_name__,
 					   value )
 		e.field = self
