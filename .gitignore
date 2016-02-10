@@ -20,3 +20,5 @@ build
 .tox
 .*.sw[nop]
 cover
+/.project
+/.pydevproject
