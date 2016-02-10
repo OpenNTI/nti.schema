@@ -9,20 +9,18 @@ thus always import `Object` from this module.
 
 .. todo:: This module is big enough it should be factored into a package and sub-modules.
 
-$Id$
+.. $Id$
 """
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-
-from zope import interface
 from zope import schema
+from zope import interface
 
 from zope.schema import interfaces as sch_interfaces
-
-
 
 class IBeforeSchemaFieldAssignedEvent(interface.Interface):
 	"""
@@ -34,11 +32,9 @@ class IBeforeSchemaFieldAssignedEvent(interface.Interface):
 	"""
 	object = interface.Attribute("The object that is going to be assigned. Subscribers may modify this")
 
-	name = interface.Attribute("The name of the attribute under which the object "
-					 "will be assigned.")
+	name = interface.Attribute("The name of the attribute under which the object will be assigned.")
 
-	context = interface.Attribute("The context object where the object will be "
-						"assigned to.")
+	context = interface.Attribute("The context object where the object will be assigned to.")
 
 # Make this a base of the zope interface so our handlers
 # are compatible
@@ -47,7 +43,7 @@ sch_interfaces.IBeforeObjectAssignedEvent.__bases__ = (IBeforeSchemaFieldAssigne
 @interface.implementer(IBeforeSchemaFieldAssignedEvent)
 class BeforeSchemaFieldAssignedEvent(object):
 
-	def __init__( self, obj, name, context ):
+	def __init__(self, obj, name, context):
 		self.object = obj
 		self.name = name
 		self.context = context
@@ -59,7 +55,7 @@ class IBeforeTextAssignedEvent(IBeforeSchemaFieldAssignedEvent):
 
 	object = schema.Text(title="The text being assigned.")
 
-class IBeforeTextLineAssignedEvent(IBeforeTextAssignedEvent): # ITextLine extends IText
+class IBeforeTextLineAssignedEvent(IBeforeTextAssignedEvent):  # ITextLine extends IText
 	"""
 	Event for assigning text lines.
 	"""
@@ -81,7 +77,7 @@ class IBeforeCollectionAssignedEvent(IBeforeIterableAssignedEvent):
 	Event for assigning collections.
 	"""
 
-	object = interface.Attribute( "The collection being assigned. May or may not be mutable." )
+	object = interface.Attribute("The collection being assigned. May or may not be mutable.")
 
 class IBeforeSetAssignedEvent(IBeforeCollectionAssignedEvent):
 	"""
@@ -93,7 +89,7 @@ class IBeforeSequenceAssignedEvent(IBeforeCollectionAssignedEvent):
 	Event for assigning sequences.
 	"""
 
-	object = interface.Attribute( "The sequence being assigned. May or may not be mutable." )
+	object = interface.Attribute("The sequence being assigned. May or may not be mutable.")
 
 class IBeforeDictAssignedEvent(IBeforeIterableAssignedEvent):
 	"""
@@ -101,8 +97,8 @@ class IBeforeDictAssignedEvent(IBeforeIterableAssignedEvent):
 	"""
 
 # The hierarchy is IContainer > IIterable > ICollection > ISequence > [ITuple, IList]
-# Also:            IContainer > IIterable > IDict
-# Also:            IContainer > IIterable > ISet
+# Also:			IContainer > IIterable > IDict
+# Also:			IContainer > IIterable > ISet
 
 @interface.implementer(IBeforeTextAssignedEvent)
 class BeforeTextAssignedEvent(BeforeSchemaFieldAssignedEvent):
@@ -121,11 +117,9 @@ class BeforeCollectionAssignedEvent(BeforeSchemaFieldAssignedEvent):
 class BeforeSequenceAssignedEvent(BeforeCollectionAssignedEvent):
 	pass
 
-
 @interface.implementer(IBeforeSetAssignedEvent)
 class BeforeSetAssignedEvent(BeforeCollectionAssignedEvent):
 	pass
-
 
 @interface.implementer(IBeforeDictAssignedEvent)
 class BeforeDictAssignedEvent(BeforeSchemaFieldAssignedEvent):
@@ -140,20 +134,20 @@ class InvalidValue(sch_interfaces.InvalidValue):
 	"""
 	value = None
 
-	def __init__( self, *args, **kwargs ):
-		super(InvalidValue,self).__init__( *args )
+	def __init__(self, *args, **kwargs):
+		super(InvalidValue, self).__init__(*args)
 		if 'value' in kwargs:
 			self.value = kwargs['value']
 		if 'field' in kwargs:
 			self.field = kwargs['field']
 
 # And we monkey patch it in to InvalidValue as well
-if not hasattr(sch_interfaces.InvalidValue, 'value' ):
-	setattr( sch_interfaces.InvalidValue, 'value', None )
+if not hasattr(sch_interfaces.InvalidValue, 'value'):
+	setattr(sch_interfaces.InvalidValue, 'value', None)
 
 # And give all validation errors a 'field'
-if not hasattr(sch_interfaces.ValidationError, 'field' ):
-	setattr( sch_interfaces.ValidationError, 'field', None )
+if not hasattr(sch_interfaces.ValidationError, 'field'):
+	setattr(sch_interfaces.ValidationError, 'field', None)
 
 class IFromObject(interface.Interface):
 	"""
@@ -161,21 +155,20 @@ class IFromObject(interface.Interface):
 	following validation rules (see :class:`zope.schema.interfaces.IFromUnicode`)
 	"""
 
-	def fromObject( obj ):
+	def fromObject(obj):
 		"""
 		Attempt to convert the object to the required type following
 		the rules of this object. Raises a TypeError or :class:`zope.schema.interfaces.ValidationError`
 		if this isn't possible.
 		"""
 
-class IVariant(sch_interfaces.IField,IFromObject):
+class IVariant(sch_interfaces.IField, IFromObject):
 	"""
 	Similar to :class:`zope.schema.interfaces.IObject`, but
 	representing one of several different types.
 	"""
 
-
-def find_most_derived_interface( ext_self, iface_upper_bound, possibilities=None ):
+def find_most_derived_interface(ext_self, iface_upper_bound, possibilities=None):
 	"""
 	Search for the most derived version of the interface `iface_upper_bound`
 	implemented by `ext_self` and return that. Always returns at least `iface_upper_bound`
@@ -184,9 +177,9 @@ def find_most_derived_interface( ext_self, iface_upper_bound, possibilities=None
 		all the interfaces provided by ``ext_self`` will be considered.
 	"""
 	if possibilities is None:
-		possibilities = interface.providedBy( ext_self )
+		possibilities = interface.providedBy(ext_self)
 	_iface = iface_upper_bound
 	for iface in possibilities:
-		if iface.isOrExtends( _iface ):
+		if iface.isOrExtends(_iface):
 			_iface = iface
 	return _iface

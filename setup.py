@@ -26,7 +26,7 @@ setup(
 		'Programming Language :: Python :: 2',
 		'Programming Language :: Python :: 2.7',
 		'Framework :: Zope3'
-		],
+	],
 	packages=find_packages('src'),
 	package_dir={'': 'src'},
 	install_requires=[
