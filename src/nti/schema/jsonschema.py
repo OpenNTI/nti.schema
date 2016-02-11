@@ -11,6 +11,13 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+from zope import interface
+
+from zope.schema import interfaces as sch_interfaces
+from zope.schema import vocabulary as sch_vocabulary
+
+from nti.schema.interfaces import find_most_derived_interface
+
 #: Don't display this by default in the UI
 TAG_HIDDEN_IN_UI = "nti.dataserver.users.field_hidden_in_ui"
 
@@ -30,19 +37,13 @@ UI_TYPE_HASHED_EMAIL = UI_TYPE_EMAIL + ":Hashed"  # So that a begins-with test w
 #: Something that can be set once, typically during account creation
 UI_TYPE_ONE_TIME_CHOICE = 'nti.dataserver.users.interfaces.OneTimeChoice'
 
-from zope import interface
-
-from zope.schema import interfaces as sch_interfaces
-from zope.schema import vocabulary as sch_vocabulary
-
-from nti.schema.interfaces import find_most_derived_interface
-
 def _ui_type_from_field_iface(field):
 	derived_field_iface = find_most_derived_interface(field, sch_interfaces.IField)
 	if derived_field_iface is not sch_interfaces.IField:
 		ui_type = derived_field_iface.getName()
 		ui_type = ui_type[1:] if ui_type.startswith('I') else ui_type
 		return ui_type
+	return None
 
 def _ui_type_from_field(field):
 	ui_type = ui_base_type = None
@@ -91,9 +92,18 @@ class JsonSchemafier(object):
 		return self.schema.namesAndDescriptions(all=True)
 
 	def allow_field(self, name, field):
+		"""
+		Return if the field is allowed in the external schema
+		"""
 		if field.queryTaggedValue(TAG_HIDDEN_IN_UI) or name.startswith('_'):
 			return False
 		return True
+
+	def ui_types_from_field(self, field):
+		"""
+		Return the type and base type for the specified field
+		"""
+		return _ui_type_from_field(field)
 
 	def make_schema(self):
 		"""
@@ -114,12 +124,14 @@ class JsonSchemafier(object):
 			if not self.allow_field(k, v):
 				continue
 
-			required = v.queryTaggedValue(TAG_REQUIRED_IN_UI) or getattr(v, 'required', None)
+			required = getattr(v, 'required', None)
+			required = v.queryTaggedValue(TAG_REQUIRED_IN_UI) or required
 
 			if readonly_override is not None:
 				readonly = readonly_override
 			else:
-				readonly = v.queryTaggedValue(TAG_READONLY_IN_UI) or getattr(v, 'readonly', False)
+				readonly = getattr(v, 'readonly', False)
+				readonly = v.queryTaggedValue(TAG_READONLY_IN_UI) or readonly
 
 			item_schema = {'name': k,
 						   'required': required,
@@ -129,9 +141,9 @@ class JsonSchemafier(object):
 			ui_type = v.queryTaggedValue(TAG_UI_TYPE)
 			ui_base_type = None
 			if not ui_type:
-				ui_type, ui_base_type = _ui_type_from_field(v)
+				ui_type, ui_base_type = self.ui_types_from_field(v)
 			else:
-				_, ui_base_type = _ui_type_from_field(v)
+				_, ui_base_type = self.ui_types_from_field(v)
 
 			item_schema['type'] = ui_type
 			item_schema['base_type'] = ui_base_type
@@ -143,7 +155,8 @@ class JsonSchemafier(object):
 				if sch_interfaces.IVocabulary.providedBy(v.vocabulary):
 					vocabulary = v.vocabulary
 				elif isinstance(v.vocabularyName, basestring):
-					vocabulary = sch_vocabulary.getVocabularyRegistry().get(None, v.vocabularyName)
+					name = v.vocabularyName
+					vocabulary = sch_vocabulary.getVocabularyRegistry().get(None, name)
 
 				if vocabulary is not None:
 					choices = []
@@ -153,9 +166,12 @@ class JsonSchemafier(object):
 						# there is a title or not
 						if getattr(term, 'title', None):
 							try:
-								choice = term.toExternalObject()  # like nti.externalization, but without the dependency
+								# like nti.externalization, but without the dependency
+								choice = term.toExternalObject()
 							except AttributeError:
-								choice = {'token': term.token, 'value': term.value, 'title': term.title}
+								choice = {'token': term.token,
+										  'value': term.value,
+										  'title': term.title}
 
 							choices.append(choice)
 						else:
@@ -163,7 +179,8 @@ class JsonSchemafier(object):
 						tokens.append(term.token)
 					item_schema['choices'] = choices
 					# common case, these will all be the same type
-					if not item_schema.get('base_type') and all((isinstance(x, basestring) for x in tokens)):
+					if 		not item_schema.get('base_type') \
+						and all((isinstance(x, basestring) for x in tokens)):
 						item_schema['base_type'] = 'string'
 
 			ext_schema[k] = item_schema
