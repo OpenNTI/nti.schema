@@ -37,14 +37,18 @@ UI_TYPE_HASHED_EMAIL = UI_TYPE_EMAIL + ":Hashed"  # So that a begins-with test w
 #: Something that can be set once, typically during account creation
 UI_TYPE_ONE_TIME_CHOICE = 'nti.dataserver.users.interfaces.OneTimeChoice'
 
+def iface_ui_type(iface):
+	ui_type = iface.getName()
+	ui_type = ui_type[1:] if ui_type.startswith('I') else ui_type
+	return ui_type
+
 def ui_type_from_field_iface(field):
 	derived_field_iface = find_most_derived_interface(field, sch_interfaces.IField)
 	if derived_field_iface is not sch_interfaces.IField:
-		ui_type = derived_field_iface.getName()
-		ui_type = ui_type[1:] if ui_type.startswith('I') else ui_type
+		ui_type = iface_ui_type(derived_field_iface)
 		return ui_type
 	return None
-_ui_type_from_field_iface = ui_type_from_field_iface
+ui_type_from_field_iface = ui_type_from_field_iface # BWC
 
 def ui_type_from_field(field):
 	ui_type = ui_base_type = None
@@ -56,13 +60,13 @@ def ui_type_from_field(field):
 		if all((issubclass(x, basestring) for x in _type)):
 			ui_type = 'basestring'
 	else:
-		ui_type = _ui_type_from_field_iface(field)
+		ui_type = ui_type_from_field_iface(field)
 
 	if ui_type in ('unicode', 'str', 'basestring'):
 		# These are all 'string' type
 
 		# Can we be more specific?
-		ui_type = _ui_type_from_field_iface(field)
+		ui_type = ui_type_from_field_iface(field)
 		if ui_type and ui_type not in ('TextLine', 'Text'):  # Yes we can
 			ui_base_type = 'string'
 		else:
@@ -70,7 +74,7 @@ def ui_type_from_field(field):
 			ui_base_type = 'string'
 
 	return ui_type, ui_base_type
-_ui_type_from_field = ui_type_from_field
+_ui_type_from_field = ui_type_from_field # BWC
 
 class JsonSchemafier(object):
 
@@ -105,7 +109,7 @@ class JsonSchemafier(object):
 		"""
 		Return the type and base type for the specified field
 		"""
-		return _ui_type_from_field(field)
+		return ui_type_from_field(field)
 
 	def make_schema(self):
 		"""
