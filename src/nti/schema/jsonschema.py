@@ -41,6 +41,7 @@ def interface_to_ui_type(iface):
 	ui_type = iface.getName()
 	ui_type = ui_type[1:] if ui_type.startswith('I') else ui_type
 	return ui_type
+_interface_to_ui_type = interface_to_ui_type
 
 def ui_type_from_field_iface(field):
 	derived_field_iface = find_most_derived_interface(field, sch_interfaces.IField)
@@ -48,7 +49,7 @@ def ui_type_from_field_iface(field):
 		ui_type = interface_to_ui_type(derived_field_iface)
 		return ui_type
 	return None
-ui_type_from_field_iface = ui_type_from_field_iface # BWC
+_ui_type_from_field_iface = ui_type_from_field_iface # BWC
 
 def ui_type_from_field(field):
 	ui_type = ui_base_type = None
@@ -59,6 +60,10 @@ def ui_type_from_field(field):
 		# Most commonly lists subclasses. Most commonly lists subclasses of strings
 		if all((issubclass(x, basestring) for x in _type)):
 			ui_type = 'basestring'
+		elif all((issubclass(x, (int, long)) for x in _type)):
+			ui_type = 'int'
+		elif all((issubclass(x, float) for x in _type)):
+			ui_type = 'float'
 	else:
 		ui_type = ui_type_from_field_iface(field)
 
@@ -72,8 +77,12 @@ def ui_type_from_field(field):
 		else:
 			ui_type = 'string'
 			ui_base_type = 'string'
-
+	elif ui_type in ('Number', 'float'):
+		ui_base_type = 'float'
+	elif ui_type in ('int', 'long'):
+		ui_base_type = 'int'
 	return ui_type, ui_base_type
+
 _ui_type_from_field = ui_type_from_field # BWC
 
 class JsonSchemafier(object):

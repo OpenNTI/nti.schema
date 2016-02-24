@@ -325,7 +325,6 @@ class ObjectLen(FieldValidationMixin,schema.MinMaxLen,ObjectBase): # order matte
 	def _fixup_validation_error_no_args(self, e, value ):
 		e.args = (value, e.__doc__, self.__fixup_name__, self.schema, list(interface.providedBy( value ) ))
 
-
 class Int(FieldValidationMixin,schema.Int):
 
 	def fromUnicode(self, value):
