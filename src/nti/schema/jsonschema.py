@@ -163,6 +163,9 @@ class JsonSchemafier(object):
 		"""
 		return process_choice_field(field, base_type)
 	
+	def post_process_field(self, name, field, item_schema):
+		pass
+
 	def make_schema(self):
 		"""
 		Create the JSON schema.
@@ -191,13 +194,13 @@ class JsonSchemafier(object):
 				readonly = getattr(v, 'readonly', False)
 				readonly = v.queryTaggedValue(TAG_READONLY_IN_UI) or readonly
 
+			ui_base_type = None
 			item_schema = {'name': k,
 						   'required': required,
 						   'readonly': readonly,
 						   'min_length': getattr(v, 'min_length', None),
 						   'max_length': getattr(v, 'max_length', None) }
 			ui_type = v.queryTaggedValue(TAG_UI_TYPE)
-			ui_base_type = None
 			if not ui_type:
 				ui_type, ui_base_type = self.ui_types_from_field(v)
 			else:
@@ -211,6 +214,7 @@ class JsonSchemafier(object):
 				item_schema['choices'] = choices
 				item_schema['base_type'] = base_type
 
+			self.post_process_field(k, v, item_schema)
 			ext_schema[k] = item_schema
-
+			
 		return ext_schema
