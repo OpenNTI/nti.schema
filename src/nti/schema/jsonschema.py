@@ -85,6 +85,43 @@ def ui_type_from_field(field):
 
 _ui_type_from_field = ui_type_from_field # BWC
 
+def process_choice_field(v, base_type=None):
+	# Vocabulary could be a name or the vocabulary itself
+	choices = ()
+	vocabulary = None
+	if sch_interfaces.IVocabulary.providedBy(v.vocabulary):
+		vocabulary = v.vocabulary
+	elif isinstance(v.vocabularyName, basestring):
+		name = v.vocabularyName
+		vocabulary = sch_vocabulary.getVocabularyRegistry().get(None, name)
+
+	if vocabulary is not None:
+		choices = []
+		tokens = []
+		for term in vocabulary:
+			# For BWC, we do different things depending on whether
+			# there is a title or not
+			if getattr(term, 'title', None):
+				try:
+					# like nti.externalization, but without the dependency
+					choice = term.toExternalObject()
+				except AttributeError:
+					choice = {'token': term.token,
+							  'value': term.value,
+							  'title': term.title}
+
+				choices.append(choice)
+			else:
+				choices.append(term.token)  # bare; ideally this would go away
+			tokens.append(term.token)
+		
+		# common case, these will all be the same type
+		if 		not base_type \
+			and all((isinstance(x, basestring) for x in tokens)):
+			base_type = 'string'
+	return choices, base_type
+_process_choice_field = process_choice_field
+
 class JsonSchemafier(object):
 
 	def __init__(self, schema, readonly_override=None):
@@ -120,6 +157,12 @@ class JsonSchemafier(object):
 		"""
 		return ui_type_from_field(field)
 
+	def process_choice_field(self, field, base_type=None):
+		"""
+		Return the choices and base type for the specified field
+		"""
+		return process_choice_field(field, base_type)
+	
 	def make_schema(self):
 		"""
 		Create the JSON schema.
@@ -164,39 +207,9 @@ class JsonSchemafier(object):
 			item_schema['base_type'] = ui_base_type
 
 			if sch_interfaces.IChoice.providedBy(v):
-				# Vocabulary could be a name or the vocabulary itself
-				item_schema['choices'] = ()
-				vocabulary = None
-				if sch_interfaces.IVocabulary.providedBy(v.vocabulary):
-					vocabulary = v.vocabulary
-				elif isinstance(v.vocabularyName, basestring):
-					name = v.vocabularyName
-					vocabulary = sch_vocabulary.getVocabularyRegistry().get(None, name)
-
-				if vocabulary is not None:
-					choices = []
-					tokens = []
-					for term in vocabulary:
-						# For BWC, we do different things depending on whether
-						# there is a title or not
-						if getattr(term, 'title', None):
-							try:
-								# like nti.externalization, but without the dependency
-								choice = term.toExternalObject()
-							except AttributeError:
-								choice = {'token': term.token,
-										  'value': term.value,
-										  'title': term.title}
-
-							choices.append(choice)
-						else:
-							choices.append(term.token)  # bare; ideally this would go away
-						tokens.append(term.token)
-					item_schema['choices'] = choices
-					# common case, these will all be the same type
-					if 		not item_schema.get('base_type') \
-						and all((isinstance(x, basestring) for x in tokens)):
-						item_schema['base_type'] = 'string'
+				choices, base_type = self.process_choice_field(v, ui_base_type)
+				item_schema['choices'] = choices
+				item_schema['base_type'] = base_type
 
 			ext_schema[k] = item_schema
 
