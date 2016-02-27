@@ -37,21 +37,21 @@ UI_TYPE_HASHED_EMAIL = UI_TYPE_EMAIL + ":Hashed"  # So that a begins-with test w
 #: Something that can be set once, typically during account creation
 UI_TYPE_ONE_TIME_CHOICE = 'nti.dataserver.users.interfaces.OneTimeChoice'
 
-def interface_to_ui_type(iface):
+def get_ui_type_from_interface(iface):
 	ui_type = iface.getName()
 	ui_type = ui_type[1:] if ui_type.startswith('I') else ui_type
 	return ui_type
-_interface_to_ui_type = interface_to_ui_type
+_interface_to_ui_type = interface_to_ui_type = get_ui_type_from_interface # BWC
 
-def ui_type_from_field_iface(field):
+def get_ui_type_from_field_interface(field):
 	derived_field_iface = find_most_derived_interface(field, sch_interfaces.IField)
 	if derived_field_iface is not sch_interfaces.IField:
-		ui_type = interface_to_ui_type(derived_field_iface)
+		ui_type = get_ui_type_from_interface(derived_field_iface)
 		return ui_type
 	return None
-_ui_type_from_field_iface = ui_type_from_field_iface # BWC
+_ui_type_from_field_iface = ui_type_from_field_iface = get_ui_type_from_field_interface # BWC
 
-def ui_type_from_field(field):
+def get_ui_types_from_field(field):
 	ui_type = ui_base_type = None
 	_type = getattr(field, '_type', None)
 	if isinstance(_type, type):
@@ -65,13 +65,13 @@ def ui_type_from_field(field):
 		elif all((issubclass(x, float) for x in _type)):
 			ui_type = 'float'
 	else:
-		ui_type = ui_type_from_field_iface(field)
+		ui_type = get_ui_type_from_field_interface(field)
 
 	if ui_type in ('unicode', 'str', 'basestring'):
 		# These are all 'string' type
 
 		# Can we be more specific?
-		ui_type = ui_type_from_field_iface(field)
+		ui_type = get_ui_type_from_field_interface(field)
 		if ui_type and ui_type not in ('TextLine', 'Text'):  # Yes we can
 			ui_base_type = 'string'
 		else:
@@ -83,9 +83,9 @@ def ui_type_from_field(field):
 		ui_base_type = 'int'
 	return ui_type, ui_base_type
 
-_ui_type_from_field = ui_type_from_field # BWC
+_ui_type_from_field = ui_type_from_field = get_ui_types_from_field # BWC
 
-def process_choice_field(v, base_type=None):
+def get_data_from_choice_field(v, base_type=None):
 	# Vocabulary could be a name or the vocabulary itself
 	choices = ()
 	vocabulary = None
@@ -120,7 +120,7 @@ def process_choice_field(v, base_type=None):
 			and all((isinstance(x, basestring) for x in tokens)):
 			base_type = 'string'
 	return choices, base_type
-_process_choice_field = process_choice_field
+_process_choice_field = process_choice_field = get_data_from_choice_field
 
 class JsonSchemafier(object):
 
@@ -151,18 +151,20 @@ class JsonSchemafier(object):
 			return False
 		return True
 
-	def ui_types_from_field(self, field):
+	def get_ui_types_from_field(self, field):
 		"""
 		Return the type and base type for the specified field
 		"""
-		return ui_type_from_field(field)
-
-	def process_choice_field(self, field, base_type=None):
+		return get_ui_types_from_field(field)
+	ui_types_from_field = get_ui_types_from_field # BWC
+	
+	def get_data_from_choice_field(self, field, base_type=None):
 		"""
 		Return the choices and base type for the specified field
 		"""
-		return process_choice_field(field, base_type)
-	
+		return get_data_from_choice_field(field, base_type)
+	process_choice_field = get_data_from_choice_field # BWC
+
 	def post_process_field(self, name, field, item_schema):
 		pass
 
@@ -202,15 +204,15 @@ class JsonSchemafier(object):
 						   'max_length': getattr(v, 'max_length', None) }
 			ui_type = v.queryTaggedValue(TAG_UI_TYPE)
 			if not ui_type:
-				ui_type, ui_base_type = self.ui_types_from_field(v)
+				ui_type, ui_base_type = self.get_ui_types_from_field(v)
 			else:
-				_, ui_base_type = self.ui_types_from_field(v)
+				_, ui_base_type = self.get_ui_types_from_fields(v)
 
 			item_schema['type'] = ui_type
 			item_schema['base_type'] = ui_base_type
 
 			if sch_interfaces.IChoice.providedBy(v):
-				choices, base_type = self.process_choice_field(v, ui_base_type)
+				choices, base_type = self.get_data_from_choice_field(v, ui_base_type)
 				item_schema['choices'] = choices
 				item_schema['base_type'] = base_type
 
