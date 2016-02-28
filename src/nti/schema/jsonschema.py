@@ -81,6 +81,8 @@ def get_ui_types_from_field(field):
 		ui_base_type = 'float'
 	elif ui_type in ('int', 'long'):
 		ui_base_type = 'int'
+	elif ui_type in ('bool',):
+		ui_base_type = 'bool'
 	return ui_type, ui_base_type
 
 _ui_type_from_field = ui_type_from_field = get_ui_types_from_field # BWC
