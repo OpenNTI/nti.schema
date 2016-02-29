@@ -208,7 +208,7 @@ class JsonSchemafier(object):
 			if not ui_type:
 				ui_type, ui_base_type = self.get_ui_types_from_field(v)
 			else:
-				_, ui_base_type = self.get_ui_types_from_fields(v)
+				_, ui_base_type = self.get_ui_types_from_field(v)
 
 			item_schema['type'] = ui_type
 			item_schema['base_type'] = ui_base_type
