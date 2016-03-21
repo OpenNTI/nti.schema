@@ -3,19 +3,19 @@
 """
 Event handlers.
 
-$Id$
+.. $Id$
 """
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-
 from zope import component
+
 from zope.component import handle
 
-from .interfaces import IBeforeSchemaFieldAssignedEvent
-
+from nti.schema.interfaces import IBeforeSchemaFieldAssignedEvent
 
 @component.adapter(IBeforeSchemaFieldAssignedEvent)
 def before_object_assigned_event_dispatcher(event):
@@ -27,5 +27,4 @@ def before_object_assigned_event_dispatcher(event):
 
 	This is analogous to :func:`zope.component.event.objectEventNotify`
 	"""
-
 	handle( event.object, event.context, event )

@@ -3,13 +3,13 @@
 """
 Helpers for writing code that implements schemas.
 
-$Id$
+.. $Id$
 """
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
-
 
 from dm.zope.schema.schema import SchemaConfigured, schemadict, Object as ObjectBase
 ObjectBase.check_declaration = True

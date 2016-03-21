@@ -3,13 +3,13 @@
 """
 Computed attributes based on schema fields.
 
-$Id$
+.. $Id$
 """
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
-
 
 import sys
 
@@ -20,18 +20,19 @@ from zope.schema import interfaces as sch_interfaces
 # later re-implement them locally if needed
 
 from zope.schema.fieldproperty import FieldProperty
-from zope.schema.fieldproperty import FieldPropertyStoredThroughField
 from zope.schema.fieldproperty import createFieldProperties
+from zope.schema.fieldproperty import FieldPropertyStoredThroughField
 
 try:
-	from Acquisition.interfaces import IAcquirer
 	from Acquisition import aq_base
+	from Acquisition.interfaces import IAcquirer
 except ImportError:
 	class IAcquirer(interface.Interface):
-		"""Placeholder because Acquisition is not installed"""
+		"""
+		Placeholder because Acquisition is not installed
+		"""
 	def aq_base(o):
 		return o
-
 
 class AcquisitionFieldProperty(FieldProperty):
 	"""
@@ -40,14 +41,14 @@ class AcquisitionFieldProperty(FieldProperty):
 	base.
 	"""
 
-	def __get__( self, instance, klass ):
-		result = super(AcquisitionFieldProperty,self).__get__( instance, klass )
-		if instance is not None and IAcquirer.providedBy( result ): # even defaults get wrapped
-			result = result.__of__( instance )
+	def __get__(self, instance, klass):
+		result = super(AcquisitionFieldProperty, self).__get__(instance, klass)
+		if instance is not None and IAcquirer.providedBy(result):  # even defaults get wrapped
+			result = result.__of__(instance)
 		return result
 
-	def __set__( self, instance, value ):
-		super(AcquisitionFieldProperty,self).__set__( instance, aq_base( value ) )
+	def __set__(self, instance, value):
+		super(AcquisitionFieldProperty, self).__set__(instance, aq_base(value))
 
 class UnicodeConvertingFieldProperty(FieldProperty):
 	"""
@@ -56,10 +57,10 @@ class UnicodeConvertingFieldProperty(FieldProperty):
 	and should be removed when all constants are unicode.
 	"""
 
-	def __set__( self, inst, value ):
+	def __set__(self, inst, value):
 		if value and not isinstance(value, unicode):
 			value = value.decode('utf-8')
-		super(UnicodeConvertingFieldProperty,self).__set__( inst, value )
+		super(UnicodeConvertingFieldProperty, self).__set__(inst, value)
 
 class AdaptingFieldProperty(FieldProperty):
 	"""
@@ -68,18 +69,18 @@ class AdaptingFieldProperty(FieldProperty):
 	like strings.
 	"""
 
-	def __init__( self, field, name=None ):
-		if not sch_interfaces.IObject.providedBy( field ):
+	def __init__(self, field, name=None):
+		if not sch_interfaces.IObject.providedBy(field):
 			raise sch_interfaces.WrongType("Don't know how to get schema from %s" % field)
 		self.schema = field.schema
 
-		super(AdaptingFieldProperty,self).__init__( field, name=name )
+		super(AdaptingFieldProperty, self).__init__(field, name=name)
 
-	def __set__( self, inst, value ):
+	def __set__(self, inst, value):
 		try:
-			super(AdaptingFieldProperty,self).__set__( inst, value )
+			super(AdaptingFieldProperty, self).__set__(inst, value)
 		except sch_interfaces.SchemaNotProvided:
-			super(AdaptingFieldProperty,self).__set__( inst, self.schema( value ) )
+			super(AdaptingFieldProperty, self).__set__(inst, self.schema(value))
 
 class AdaptingFieldPropertyStoredThroughField(FieldPropertyStoredThroughField):
 	"""
@@ -88,17 +89,17 @@ class AdaptingFieldPropertyStoredThroughField(FieldPropertyStoredThroughField):
 	like strings.
 	"""
 
-	def __init__( self, field, name=None ):
-		if not sch_interfaces.IObject.providedBy( field ):
+	def __init__(self, field, name=None):
+		if not sch_interfaces.IObject.providedBy(field):
 			raise sch_interfaces.WrongType()
 		self.schema = field.schema
-		super(AdaptingFieldPropertyStoredThroughField,self).__init__( field, name=name )
+		super(AdaptingFieldPropertyStoredThroughField, self).__init__(field, name=name)
 
-	def __set__( self, inst, value ):
+	def __set__(self, inst, value):
 		try:
-			super(AdaptingFieldPropertyStoredThroughField,self).__set__( inst, value )
+			super(AdaptingFieldPropertyStoredThroughField, self).__set__(inst, value)
 		except sch_interfaces.SchemaNotProvided:
-			super(AdaptingFieldPropertyStoredThroughField,self).__set__( inst, self.schema( value ) )
+			super(AdaptingFieldPropertyStoredThroughField, self).__set__(inst, self.schema(value))
 
 def createDirectFieldProperties(__schema, omit=(), adapting=False):
 	"""
@@ -115,18 +116,18 @@ def createDirectFieldProperties(__schema, omit=(), adapting=False):
 	__all_names = set(__schema.names(all=True))
 
 	__not_my_names = __all_names - __my_names
-	__not_my_names.update( omit )
+	__not_my_names.update(omit)
 
 	# The existing implementation relies on getframe(1) to find the caller,
 	# which is us. So we do the same and copy to the real caller
 	__frame = None
 	__before = None
 	__before = list(locals().keys())
-	createFieldProperties(__schema,omit=__not_my_names)
+	createFieldProperties(__schema, omit=__not_my_names)
 
 	__frame = sys._getframe(1)
 	for k, v in locals().items():
 		if k not in __before:
-			if adapting and sch_interfaces.IObject.providedBy( __schema[k] ):
-				v = AdaptingFieldProperty( __schema[k] )
+			if adapting and sch_interfaces.IObject.providedBy(__schema[k]):
+				v = AdaptingFieldProperty(__schema[k])
 			__frame.f_locals[k] = v

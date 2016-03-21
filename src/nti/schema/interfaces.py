@@ -7,7 +7,7 @@ Also patches a bug in the :class:`dm.zope.schema.schema.Object` class
 that requires the default value for ``check_declaration`` to be specified;
 thus always import `Object` from this module.
 
-.. todo:: This module is big enough it should be factored into a package and sub-modules.
+.. TODO: This module is big enough it should be factored into a package and sub-modules.
 
 .. $Id$
 """
