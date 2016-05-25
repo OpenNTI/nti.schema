@@ -67,6 +67,7 @@ Iterable = Iterable
 
 from nti.schema.interfaces import IVariant
 from nti.schema.interfaces import IFromObject
+from nti.schema.interfaces import IListOrTuple
 
 import numbers
 import collections
@@ -494,6 +495,7 @@ class IndexedIterable(_ValueTypeAddingDocMixin, FieldValidationMixin, schema.Lis
 	def set(self, context, value):
 		_do_set(self, context, value, IndexedIterable, BeforeSequenceAssignedEvent)
 
+@interface.implementer(IListOrTuple)
 class ListOrTuple(IndexedIterable):
 	_type = (list, tuple)
 

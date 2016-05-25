@@ -167,6 +167,9 @@ class IVariant(sch_interfaces.IField, IFromObject):
 	Similar to :class:`zope.schema.interfaces.IObject`, but
 	representing one of several different types.
 	"""
+	
+class IListOrTuple(sch_interfaces.IList):
+	pass
 
 def find_most_derived_interface(ext_self, iface_upper_bound, possibilities=None):
 	"""
