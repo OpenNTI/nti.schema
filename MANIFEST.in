@@ -1,7 +1,7 @@
-include README.rst
-include LICENSE
-include CHANGES.rst
+include *.in
+include *.rst
 include AUTHORS
+include LICENSE
 include babel.cfg
 include nose2.cfg
 include tox.ini

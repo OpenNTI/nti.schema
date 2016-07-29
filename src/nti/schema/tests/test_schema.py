@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
@@ -316,49 +315,45 @@ class TestConfigured(unittest.TestCase):
         schema = JsonSchemafier(IA).make_schema()
         assert_that(schema, has_entry('choice', has_entry('choices', has_item(ext))))
 
-try:
-    from Acquisition import Implicit
 
-    from ExtensionClass import Base
+from Acquisition import Implicit
 
-    from nti.schema.fieldproperty import AcquisitionFieldProperty
+from ExtensionClass import Base
 
-    from nti.testing.matchers import aq_inContextOf
-except ImportError:
-    pass
-else:
+from nti.schema.fieldproperty import AcquisitionFieldProperty
 
-    class TestAq(unittest.TestCase):
+from nti.testing.matchers import aq_inContextOf
+class TestAq(unittest.TestCase):
 
-        def test_aq_property(self):
+    def test_aq_property(self):
 
-            class IBaz(interface.Interface):
-                pass
+        class IBaz(interface.Interface):
+            pass
 
-            class IFoo(interface.Interface):
-                ob = Object(IBaz)
+        class IFoo(interface.Interface):
+            ob = Object(IBaz)
 
-            @interface.implementer(IBaz)
-            class Baz(object):
-                pass
+        @interface.implementer(IBaz)
+        class Baz(object):
+            pass
 
-            class BazAQ(Implicit, Baz):
-                pass
+        class BazAQ(Implicit, Baz):
+            pass
 
-            @interface.implementer(IFoo)
-            class Foo(Base):
-                ob = AcquisitionFieldProperty(IFoo['ob'])
+        @interface.implementer(IFoo)
+        class Foo(Base):
+            ob = AcquisitionFieldProperty(IFoo['ob'])
 
-            assert_that(Foo, has_property('ob', is_(AcquisitionFieldProperty)))
+        assert_that(Foo, has_property('ob', is_(AcquisitionFieldProperty)))
 
-            foo = Foo()
-            assert_that(foo, has_property('ob', none()))
+        foo = Foo()
+        assert_that(foo, has_property('ob', none()))
 
-            foo.ob = Baz()
-            assert_that(foo, has_property('ob', is_not(aq_inContextOf(foo))))
+        foo.ob = Baz()
+        assert_that(foo, has_property('ob', is_not(aq_inContextOf(foo))))
 
-            foo.ob = BazAQ()
-            assert_that(foo, has_property('ob', aq_inContextOf(foo)))
+        foo.ob = BazAQ()
+        assert_that(foo, has_property('ob', aq_inContextOf(foo)))
 
 from nti.schema.schema import _superhash as superhash
 

@@ -2,18 +2,22 @@
 from setuptools import setup, find_packages
 import codecs
 
-VERSION = '1.0.2a1'
+version = '1.0.2a1'
 
 entry_points = {
 }
 
+def _read(fname):
+    with codecs.open(fname, encoding='utf-8') as f:
+        return f.read()
+
 setup(
     name = 'nti.schema',
-    version = VERSION,
+    version = version,
     author = 'Jason Madden',
     author_email = 'open-source@nextthought.com',
     description = ('Zope schema related support'),
-    long_description = codecs.open('README.rst', encoding='utf-8').read() + '\n\n' + codecs.open('CHANGES.rst', encoding='utf-8').read(),
+    long_description = _read('README.rst') + '\n\n' + _read('CHANGES.rst'),
     license = 'Apache',
     keywords = 'zope schema',
     url = 'https://github.com/NextThought/nti.schema',
@@ -29,12 +33,14 @@ setup(
     ],
     packages=find_packages('src'),
     package_dir={'': 'src'},
+    include_package_data=True,
     install_requires=[
         'setuptools',
         'zope.schema',
         'zope.i18nmessageid',
         'zope.browserresource',
         'zope.vocabularyregistry',
+        'zope.deferredimport',
         'dm.zope.schema', # PY3: Not  ported yet
         'dolmen.builtins',
         'plone.i18n < 3.0', # PY3: Not ported yet; version 3 adds hard dep on Products.CMFCore/Zope2
@@ -43,7 +49,8 @@ setup(
         'test':[
             'nose2',
             'pyhamcrest',
-            'zope.testing',
+            'nti.testing',
+            'zope.testrunner',
             'zope.dottedname',
             'transaction'
         ]
