@@ -12,12 +12,27 @@ __docformat__ = "restructuredtext en"
 logger = __import__('logging').getLogger(__name__)
 
 from zope import component
+from zope import interface
 
 from zope.schema.vocabulary import SimpleTerm as _SimpleTerm
 from zope.schema.vocabulary import SimpleVocabulary as _SimpleVocabulary
 
-# XXX: This goes away on Py3
-from plone.i18n.locales.interfaces import ICountryAvailability as _ICountryAvailability
+try:
+    from plone.i18n.locales.interfaces import ICountryAvailability as _ICountryAvailability
+except ImportError:
+    # Not on Py3
+    class _ICountryAvailability(interface.Interface):
+        def getCountries():
+            ""
+
+@interface.implementer(_ICountryAvailability)
+class _CountryAvailabilityFallback(object):
+
+    def getCountries(self):
+        return {
+            u'us' : {u'name' : 'United States', u'flag' : u'/++resource++country-flags/us.gif'},
+        }
+
 
 
 class CountryTerm(_SimpleTerm):
@@ -58,5 +73,5 @@ def CountryVocabularyFactory(context):
     """
     A vocabulary factory, if plone.i18n is available.
     """
-    countries = component.getUtility(_ICountryAvailability)
+    countries = component.queryUtility(_ICountryAvailability) or _CountryAvailabilityFallback()
     return _CountryVocabulary([CountryTerm.fromItem(item) for item in countries.getCountries().items()])

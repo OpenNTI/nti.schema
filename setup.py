@@ -29,7 +29,12 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
-        'Framework :: Zope3'
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: Implementation :: CPython',
+        'Programming Language :: Python :: Implementation :: PyPy',
+        'Framework :: Zope3',
     ],
     packages=find_packages('src'),
     package_dir={'': 'src'},
@@ -41,9 +46,6 @@ setup(
         'zope.browserresource',
         'zope.vocabularyregistry',
         'zope.deferredimport',
-        'dm.zope.schema', # PY3: Not  ported yet
-        'dolmen.builtins',
-        'plone.i18n < 3.0', # PY3: Not ported yet; version 3 adds hard dep on Products.CMFCore/Zope2
     ],
     extras_require={
         'test':[
@@ -53,6 +55,11 @@ setup(
             'zope.testrunner',
             'zope.dottedname',
             'transaction'
+        ],
+        ':python_version == "2.7"': [
+            # Not ported to Py3 yet; Plus, version 3 adds hard dep on
+            # Products.CMFCore/Zope2 that we don't want.
+            'plone.i18n < 3.0',
         ]
     },
     namespace_packages=['nti'],

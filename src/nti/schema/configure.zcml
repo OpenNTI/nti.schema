@@ -8,11 +8,11 @@
     <include package="zope.component" />
     <include package="zope.security" />
 
-    <!-- browser:resourceDirectory directive, used by plone.i18n -->
-    <include package="zope.browserresource" file="meta.zcml"
-			 zcml:installed="plone.i18n" />
-    <include package="plone.i18n"
-			 zcml:installed="plone.i18n" />
+    <configure zcml:condition="installed plone.i18n">
+        <!-- browser:resourceDirectory directive, used by plone.i18n -->
+        <include package="zope.browserresource" file="meta.zcml" />
+        <include package="plone.i18n" />
+    </configure>
     <include package="zope.vocabularyregistry" />
 
     <!-- I18N -->
@@ -24,6 +24,6 @@
     <utility component=".vocabulary.CountryVocabularyFactory"
              provides="zope.schema.interfaces.IVocabularyFactory"
              name="Countries"
-             zcml:installed="plone.i18n" />
+              />
 
 </configure>

@@ -22,7 +22,7 @@ does_not = is_not
 import unittest
 
 from zope import interface
-from dolmen.builtins import IUnicode
+from . import IUnicode
 
 from nti.schema.field import Number
 from nti.schema.field import Object

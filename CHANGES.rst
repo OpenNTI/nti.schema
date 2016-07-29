@@ -6,7 +6,12 @@ Changes
 
 1.1.0 (unreleased)
 ------------------
-
+- Add support for Python 3. *Note* the countries vocabulary will not
+  be complete on Python 3.
+- Drop the ``dolmen.builtins`` dependency.
+- Drop the ``dm.zope.schema`` dependency.
+- The ``plone.i18n`` dependency is Python 2 only (and can even be
+  removed).
 - The matchers in ``nti.schema.testing`` have been moved to
   ``nti.testing.matchers``.
 - Using ``AdaptingFieldProperty`` will now raise the more specific
