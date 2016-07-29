@@ -5,7 +5,7 @@
 =========
 
 
-1.1.0 (unreleased)
+1.1.0 (2016-07-29)
 ==================
 - Add support for Python 3. *Note* the countries vocabulary will not
   be complete on Python 3.
