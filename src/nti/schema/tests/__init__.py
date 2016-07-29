@@ -34,3 +34,13 @@ class SchemaLayer(ZopeComponentLayer,
         pass
 
     testTearDown = testSetUp
+
+from zope.interface import Interface, classImplements
+
+class IUnicode(Interface):
+    "Unicode strings"
+
+try:
+    classImplements(unicode, IUnicode)
+except NameError:
+    classImplements(str, IUnicode)

@@ -57,7 +57,7 @@ from nti.schema.interfaces import IVariant
 from nti.schema.interfaces import IBeforeDictAssignedEvent
 from nti.schema.interfaces import IBeforeSequenceAssignedEvent
 
-from dolmen.builtins import IUnicode
+from . import IUnicode
 
 from zope.schema.interfaces import SchemaNotProvided
 from zope.schema.interfaces import TooLong

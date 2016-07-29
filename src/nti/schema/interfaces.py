@@ -167,7 +167,7 @@ class IVariant(sch_interfaces.IField, IFromObject):
     Similar to :class:`zope.schema.interfaces.IObject`, but
     representing one of several different types.
     """
-    
+
 class IListOrTuple(sch_interfaces.IList):
     pass
 
@@ -186,3 +186,15 @@ def find_most_derived_interface(ext_self, iface_upper_bound, possibilities=None)
         if iface.isOrExtends(_iface):
             _iface = iface
     return _iface
+
+try:
+    from dm.zope.schema.interfaces import ISchemaConfigured as _ISchemaConfigured
+except ImportError:
+    _ISchemaConfigured = interface.Interface
+
+class ISchemaConfigured(_ISchemaConfigured):
+    """
+    marker interface for ``SchemaConfigured`` classes.
+
+    Used to facilitate the registration of forms and views.
+    """

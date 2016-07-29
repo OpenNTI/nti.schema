@@ -18,6 +18,9 @@ from zope.schema import vocabulary as sch_vocabulary
 
 from nti.schema.interfaces import find_most_derived_interface
 
+from six import string_types
+from six import integer_types
+
 #: Don't display this by default in the UI
 TAG_HIDDEN_IN_UI = "nti.dataserver.users.field_hidden_in_ui"
 
@@ -58,9 +61,9 @@ def get_ui_types_from_field(field):
         ui_type = _type.__name__
     elif isinstance(_type, tuple):
         # Most commonly lists subclasses. Most commonly lists subclasses of strings
-        if all((issubclass(x, basestring) for x in _type)):
+        if all((issubclass(x, string_types) for x in _type)):
             ui_type = 'basestring'
-        elif all((issubclass(x, (int, long)) for x in _type)):
+        elif all((issubclass(x, integer_types) for x in _type)):
             ui_type = 'int'
         elif all((issubclass(x, float) for x in _type)):
             ui_type = 'float'
@@ -94,7 +97,7 @@ def get_data_from_choice_field(v, base_type=None):
     vocabulary = None
     if sch_interfaces.IVocabulary.providedBy(v.vocabulary): # pragma: no cover
         vocabulary = v.vocabulary
-    elif isinstance(v.vocabularyName, basestring):
+    elif isinstance(v.vocabularyName, string_types):
         name = v.vocabularyName
         vocabulary = sch_vocabulary.getVocabularyRegistry().get(None, name)
 
@@ -119,8 +122,8 @@ def get_data_from_choice_field(v, base_type=None):
             tokens.append(term.token)
 
         # common case, these will all be the same type
-        if      not base_type \
-            and all((isinstance(x, basestring) for x in tokens)):
+        if  not base_type \
+            and all((isinstance(x, string_types) for x in tokens)):
             base_type = 'string'
     return choices, base_type
 _process_choice_field = process_choice_field = get_data_from_choice_field

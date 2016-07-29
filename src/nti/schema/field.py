@@ -21,10 +21,15 @@ from nti.schema import MessageFactory as _
 
 import re
 from six import string_types
+from six import reraise
+import sys
 
-from dm.zope.schema.schema import SchemaConfigured, Object as ObjectBase
+from zope.schema import Object as _ObjectBase
+
+from .schema import SchemaConfigured
 SchemaConfigured = SchemaConfigured
-ObjectBase.check_declaration = True
+
+from .schema import schemadict
 
 import zope.interface.common.idatetime
 
@@ -191,7 +196,21 @@ class ValidDatetime(FieldValidationMixin, Datetime):
         if not self.schema.providedBy(value):  # pragma: no cover
             raise sch_interfaces.SchemaNotProvided
 
-class Object(FieldValidationMixin, ObjectBase):
+if hasattr(dict, 'iteritems'):
+    _iteritems = dict.iteritems
+else:
+    _iteritems = dict.items
+
+class Object(FieldValidationMixin, _ObjectBase):
+    """
+    Improved ``zope.schema.Object``.
+    """
+
+    # The original dm.zope.schema.Object that we were using before
+    # contains extra validation logic, but as far as I can tell, it's
+    # pretty much a duplicate of zope.schema.Object. Perhaps that wasn't
+    # always the case? At any rate, elide it, because it never seems to get
+    # called (the error would already have been raised.)
 
     def _fixup_validation_error_no_args(self, e, value):
         e.args = (value, e.__doc__, self.__fixup_name__, self.schema, list(interface.providedBy(value)))
@@ -279,6 +298,8 @@ class Variant(FieldValidationMixin, schema.Field):
         in which fields were given to the constructor. Some fields cannot be used to adapt.
         """
 
+        exc_info = None
+
         for field in self.fields:
             try:
                 # Three possible ways to convert: adapting the schema of an IObject,
@@ -298,7 +319,7 @@ class Variant(FieldValidationMixin, schema.Field):
                 adapted = converter(obj)
             except (TypeError, sch_interfaces.ValidationError):
                 # Nope, no good
-                pass
+                exc_info = sys.exc_info()
             else:
                 # We got one that like the type. Do the validation
                 # now, and then return. Don't try to convert with others;
@@ -310,10 +331,13 @@ class Variant(FieldValidationMixin, schema.Field):
                     # Except in one case. Some schema provides adapt to something
                     # that they do not actually want (e.g., ISanitizedHTMLContent can adapt as IPlainText when empty)
                     # so ignore that and keep trying
-                    pass
+                    exc_info = sys.exc_info()
 
         # We get here if nothing worked and re-raise the last exception
-        raise
+        try:
+            reraise(*exc_info)
+        finally:
+            del exc_info
 
     def set(self, context, value):
         # Try to determine the most appropriate event to fire
@@ -328,7 +352,7 @@ class Variant(FieldValidationMixin, schema.Field):
                 _do_set(self, context, value, Variant, factory)
                 return
 
-class ObjectLen(FieldValidationMixin, schema.MinMaxLen, ObjectBase):  # order matters
+class ObjectLen(FieldValidationMixin, schema.MinMaxLen, _ObjectBase):  # order matters
     """
     Allows specifying a length for arbitrary object fields (though the
     objects themselves must support the `len` function.
@@ -573,7 +597,7 @@ class DictFromObject(_ValueTypeAddingDocMixin,
     def _do_fromObject(self, context):
         key_converter = self._converter_for(self.key_type)
         value_converter = self._converter_for(self.value_type)
-        return {key_converter(k): value_converter(v) for k, v in context.iteritems()}
+        return {key_converter(k): value_converter(v) for k, v in _iteritems(context)}
 
 @__with_set(BeforeSetAssignedEvent)
 class ValidSet(_ValueTypeAddingDocMixin, FieldValidationMixin, schema.Set):

@@ -3,16 +3,90 @@
 """
 Helpers for writing code that implements schemas.
 
-.. $Id$
+This module contains code based on code originally from dm.zope.schema.
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
+from __future__ import print_function, absolute_import, division
 __docformat__ = "restructuredtext en"
 
-logger = __import__('logging').getLogger(__name__)
+from zope import interface
+from zope.interface import Interface
+from zope.interface import providedBy
+from .interfaces import ISchemaConfigured
 
-from dm.zope.schema.schema import SchemaConfigured, schemadict, Object as ObjectBase
-ObjectBase.check_declaration = True
+from zope.schema import getFieldsInOrder
+
+
+def _interface_from_spec(spec):
+    """
+    build an interface from interface spec *spec*.
+
+    This should probably go into its own package (maybe ``dm.zope.interface``).
+
+    Note: the interfaces constructed in this way may not be picklable
+    (not tested). If they are indeed not picklable, they should not be stored.
+    """
+    # try to guess whether "spec" is an interface or specification
+    #  The implementors have broken "issubclass", we therefore need
+    #  more indirect (and in principle less reliable) methods
+    # if issubclass(spec, Interface):
+    # For example, the implementedBy object tests true, but can't be passed to getFieldsInOrder
+
+    if hasattr(spec, 'names'):
+        return spec # pragma: no cover
+    return type(Interface)('FromSpec', tuple(spec), {})
+
+
+def schemaitems(spec):
+    """The schema part of interface specification *spec* as a list of id, field pairs."""
+    iface = _interface_from_spec(spec)
+    # may want to filter duplicates out or raise an exception on duplicates
+    seen = set()
+    items = []
+    for (name, field) in getFieldsInOrder(iface):
+        if name in seen:
+            continue # pragma: no cover
+        seen.add(name)
+        items.append((name, field))
+    return items
+
+
+def schemadict(spec):
+    """The schema part of interface specification *spec* as a ``dict``."""
+    return dict(schemaitems(spec))
+
+if hasattr(dict, 'iteritems'):
+    _iteritems = dict.iteritems
+else:
+    _iteritems = dict.items
+
+
+@interface.implementer(ISchemaConfigured)
+class SchemaConfigured(object):
+    """Mixin class to provide configuration by the provided schema components."""
+
+    def __init__(self, **kw):
+        schema = schemadict(self.sc_schema_spec())
+        for k, v in _iteritems(kw):
+            # might want to control this check
+            if k not in schema:
+                raise TypeError('non schema keyword argument: %s' % k)
+            setattr(self, k, v)
+        # provide default values for schema fields not set
+        for f, fields in _iteritems(schema):
+          if not hasattr(self, f):
+              setattr(self, f, fields.default)
+
+    # provide control over which interfaces define the data schema
+    SC_SCHEMAS = None
+
+    def sc_schema_spec(self):
+        """the schema specification which determines the data schema.
+
+        This is determined by `SC_SCHEMAS` and defaults to `providedBy(self)`.
+        """
+        spec = self.SC_SCHEMAS
+        return spec or providedBy(self)
 
 class PermissiveSchemaConfigured(SchemaConfigured):
     """
@@ -31,9 +105,7 @@ class PermissiveSchemaConfigured(SchemaConfigured):
             super(PermissiveSchemaConfigured,self).__init__( **kwargs )
         else:
             _schema = schemadict(self.sc_schema_spec())
-            for k in kwargs.keys():
-                if k not in _schema:
-                    kwargs.pop( k )
+            kwargs = {k: kwargs[k] for k in kwargs if k in _schema}
             super(PermissiveSchemaConfigured,self).__init__( **kwargs )
 
 from zope.deferredimport import deprecatedFrom
