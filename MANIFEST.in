@@ -8,3 +8,9 @@ include tox.ini
 recursive-include src *.po
 recursive-include src *.pot
 recursive-include src *.zcml
+include *.txt
+include .coveragerc
+recursive-include doc *.py
+recursive-include doc *.rst
+recursive-include doc Makefile
+recursive-exclude doc changelog.rst
