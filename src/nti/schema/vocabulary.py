@@ -16,10 +16,9 @@ from zope import component
 from zope.schema.vocabulary import SimpleTerm as _SimpleTerm
 from zope.schema.vocabulary import SimpleVocabulary as _SimpleVocabulary
 
-try:
-    from plone.i18n.locales.interfaces import ICountryAvailability as _ICountryAvailability
-except ImportError:
-    _ICountryAvailability = None
+# XXX: This goes away on Py3
+from plone.i18n.locales.interfaces import ICountryAvailability as _ICountryAvailability
+
 
 class CountryTerm(_SimpleTerm):
     """

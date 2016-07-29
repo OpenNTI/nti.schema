@@ -8,23 +8,20 @@ logger = __import__('logging').getLogger(__name__)
 # disable: accessing protected members, too many methods
 # pylint: disable=W0212,R0904
 
-from hamcrest import is_
+
 from hamcrest import is_not
-from hamcrest import has_item
-from hamcrest import not_none
 from hamcrest import contains
-from hamcrest import has_entry
+
 from hamcrest import has_length
 from hamcrest import assert_that
 from hamcrest import has_property
+from hamcrest import calling
+from hamcrest import raises
 does_not = is_not
 
 import unittest
 
 from zope import interface
-
-
-
 from dolmen.builtins import IUnicode
 
 from nti.schema.field import Number
@@ -34,11 +31,9 @@ from nti.schema.field import Object
 from nti.schema.field import DictFromObject
 from nti.schema.field import ValidTextLine as TextLine
 
-
+from ..schema import PermissiveSchemaConfigured
 
 from nti.schema.interfaces import IBeforeDictAssignedEvent
-
-from nti.schema.jsonschema import JsonSchemafier
 
 
 class TestMisc(unittest.TestCase):
@@ -55,9 +50,33 @@ class TestMisc(unittest.TestCase):
         assert_that(field, has_property('__name__', '__st_field_st'))
         assert_that(field, has_property('__fixup_name__', 'field'))
 
+class TestSchemaConfigured(unittest.TestCase):
+
+    def test_init(self):
+        class IA(interface.Interface):
+            field = Number()
+
+        @interface.implementer(IA)
+        class A(PermissiveSchemaConfigured):
+            pass
+
+        # All of these are valid ways to call it
+        A()
+        A(thing='abc')
+        a = A(field=1)
+        assert_that(a, has_property('field', 1))
+
+        # But we can flip off the extra
+        A.SC_PERMISSIVE = False
+        A()
+        assert_that(calling(A).with_args(thing=1),
+                    raises(TypeError, 'non schema keyword'))
+        a = A(field=1)
+        assert_that(a, has_property('field', 1))
+
+
 from . import SchemaLayer
 from zope.component import eventtesting
-
 
 class TestConfigured(unittest.TestCase):
 
@@ -80,51 +99,3 @@ class TestConfigured(unittest.TestCase):
         events = eventtesting.getEvents(IBeforeDictAssignedEvent)
         assert_that(events, has_length(1))
         assert_that(events, contains(has_property('object', {'k': 1.0})))
-
-    def test_country_vocabulary(self):
-        from zope.schema import Choice
-
-        class IA(interface.Interface):
-            choice = Choice(title="Choice",
-                            vocabulary="Countries")
-
-        o = object()
-
-        choice = IA['choice'].bind(o)
-        assert_that(choice.vocabulary, is_(not_none()))
-        term = choice.vocabulary.getTermByToken('us')
-        assert_that(term, has_property('value', "United States"))
-        ext = term.toExternalObject()
-        assert_that(ext, has_entry('flag', u'/++resource++country-flags/us.gif'))
-        assert_that(ext, has_entry('title', 'United States'))
-
-        schema = JsonSchemafier(IA).make_schema()
-        assert_that(schema, has_entry('choice', has_entry('choices', has_item(ext))))
-
-
-
-from nti.schema.schema import _superhash as superhash
-
-class TestSuperHash(unittest.TestCase):
-
-    def test_iterable(self):
-        assert_that(hash(superhash([1, 3, 5])),
-                    is_(hash(superhash([x for x in [1, 3, 5]]))))
-
-        assert_that(superhash([1, 2]), is_not(superhash([2, 1])))
-        assert_that(hash(superhash([1, 2])), is_not(hash(superhash([2, 1]))))
-
-    def test_nested_dict(self):
-        d = {1: 1,
-             2: [1, 2, 3],
-             3: {4: [4, 5, 6]}}
-
-        assert_that(superhash(d),
-                    is_(
-                        ((1, 1),
-                         (2, (1, 2, 3)),
-                         (3, ((4, (4, 5, 6)),)))
-                    ))
-
-        assert_that(hash(superhash(d)),
-                    is_(-6213620179105025536))
