@@ -12,3 +12,5 @@ Changes
 - Using ``AdaptingFieldProperty`` will now raise the more specific
   ``SchemaNotProvided`` error instead of a ``TypeError`` if adapting
   the value fails.
+- ``EqHash`` has moved from ``nti.schema.schema`` to
+  ``nti.schema.eqhash``. A compatibility shim remains.

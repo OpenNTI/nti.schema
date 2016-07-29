@@ -24,10 +24,10 @@ from hamcrest import contains
 from hamcrest import has_length
 from hamcrest import none
 
-
-from nti.testing.matchers import validated_by
-from nti.testing.matchers import not_validated_by
-from nti.testing.matchers import verifiably_provides
+# use old imports to test bwc
+from nti.schema.testing import validated_by
+from nti.schema.testing import not_validated_by
+from nti.schema.testing import verifiably_provides
 
 
 from . import SchemaLayer
