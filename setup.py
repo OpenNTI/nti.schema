@@ -40,6 +40,7 @@ setup(
         'zope.i18nmessageid',
         'zope.browserresource',
         'zope.vocabularyregistry',
+        'zope.deferredimport',
         'dm.zope.schema', # PY3: Not  ported yet
         'dolmen.builtins',
         'plone.i18n < 3.0', # PY3: Not ported yet; version 3 adds hard dep on Products.CMFCore/Zope2
