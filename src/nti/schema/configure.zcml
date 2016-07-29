@@ -1,27 +1,27 @@
 <!-- -*- mode: nxml -*- -->
-<configure	xmlns="http://namespaces.zope.org/zope"
-			xmlns:i18n="http://namespaces.zope.org/i18n"
-			xmlns:zcml="http://namespaces.zope.org/zcml">
+<configure  xmlns="http://namespaces.zope.org/zope"
+            xmlns:i18n="http://namespaces.zope.org/i18n"
+            xmlns:zcml="http://namespaces.zope.org/zcml">
 
-	<include package="zope.component" file="meta.zcml" />
-	<include package="zope.security" file="meta.zcml" />
-	<include package="zope.component" />
-	<include package="zope.security" />
+    <include package="zope.component" file="meta.zcml" />
+    <include package="zope.security" file="meta.zcml" />
+    <include package="zope.component" />
+    <include package="zope.security" />
 
-	<!-- browser:resourceDirectory directive, used by plone.i18n -->
-	<include package="zope.browserresource" file="meta.zcml" />
+    <!-- browser:resourceDirectory directive, used by plone.i18n -->
+    <include package="zope.browserresource" file="meta.zcml" />
 
-	<include package="plone.i18n" />
-	<include package="zope.vocabularyregistry" />
+    <include package="plone.i18n" />
+    <include package="zope.vocabularyregistry" />
 
-	<!-- I18N -->
-	<include package="zope.i18n" file="meta.zcml" />
-	<i18n:registerTranslations directory="locales" />
+    <!-- I18N -->
+    <include package="zope.i18n" file="meta.zcml" />
+    <i18n:registerTranslations directory="locales" />
 
-	<subscriber handler=".subscribers.before_object_assigned_event_dispatcher" />
+    <subscriber handler=".subscribers.before_object_assigned_event_dispatcher" />
 
-	<utility component=".vocabulary.CountryVocabularyFactory"
-			 provides="zope.schema.interfaces.IVocabularyFactory"
-			 name="Countries" />
+    <utility component=".vocabulary.CountryVocabularyFactory"
+             provides="zope.schema.interfaces.IVocabularyFactory"
+             name="Countries" />
 
 </configure>
