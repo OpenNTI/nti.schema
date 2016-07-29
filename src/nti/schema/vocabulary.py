@@ -1,7 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Vocabularies and factories for use in schema fields,
+Vocabularies and factories for use in schema fields.
+
+When this package is configured (via ``configure.zcml``) there will be a schema
+vocabulary named ``Countries`` available::
+
+  from nti.schema.field import Choice
+  from zope import interface
+
+  class IA(interface.Interface):
+    choice = Choice(title="Choice",
+                     vocabulary="Countries")
+
+
 
 .. $Id$
 """
@@ -24,7 +36,6 @@ except ImportError:
     class _ICountryAvailability(interface.Interface):
         def getCountries():
             ""
-
 @interface.implementer(_ICountryAvailability)
 class _CountryAvailabilityFallback(object):
 

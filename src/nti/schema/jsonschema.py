@@ -3,6 +3,8 @@
 """
 For producing a JSON schema appropriate for use by clients, based on a Zope schema.
 
+.. note:: This schema is ad-hoc and non-standard.
+
 .. $Id$
 """
 
@@ -177,6 +179,9 @@ class JsonSchemafier(object):
     def make_schema(self):
         """
         Create the JSON schema.
+
+        Individual fields of the schema will be checked and returned. See the various
+        ``TAG`` constants for ways that the schema externalization can be influenced.
 
         :return: A dictionary consisting of dictionaries, one for each field. All the keys
             are strings and the values are strings, bools, numbers, or lists of primitives.

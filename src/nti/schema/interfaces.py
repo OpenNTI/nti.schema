@@ -1,15 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Utility classes and methods for working with zope schemas.
+Interfaces describing the events and fields this package uses.
 
-Also patches a bug in the :class:`dm.zope.schema.schema.Object` class
-that requires the default value for ``check_declaration`` to be specified;
-thus always import `Object` from this module.
-
-.. TODO: This module is big enough it should be factored into a package and sub-modules.
-
-.. $Id$
+Also utility functions.
 """
 
 from __future__ import print_function, unicode_literals, absolute_import, division

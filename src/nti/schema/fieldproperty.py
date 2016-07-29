@@ -105,7 +105,20 @@ def createDirectFieldProperties(__schema, omit=(), adapting=False):
     Like :func:`zope.schema.fieldproperty.createFieldProperties`, except
     only creates properties for fields directly contained within the
     given schema; inherited fields from parent interfaces are assummed
-    to be implemented in a base class of the current class.
+    to be implemented in a base class of the current class::
+
+      class IA(interface.Interface):
+          a = TextLine(title="a")
+
+      class IB(IA):
+          b = Object(IBaz)
+
+      class A(object):
+          createFieldProperties(IA)
+
+      class B(object):
+          createDirectFieldProperties(IB, adapting=True)
+
 
     :keyword adapting: If set to ``True`` (not the default), fields
         that implement :class:`.IObject` will use an :class:`AdaptingFieldProperty`.

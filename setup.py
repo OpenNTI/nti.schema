@@ -17,7 +17,7 @@ setup(
     author = 'Jason Madden',
     author_email = 'open-source@nextthought.com',
     description = ('Zope schema related support'),
-    long_description = _read('README.rst') + '\n\n' + _read('CHANGES.rst'),
+    long_description = _read('README.rst'),
     license = 'Apache',
     keywords = 'zope schema',
     url = 'https://github.com/NextThought/nti.schema',

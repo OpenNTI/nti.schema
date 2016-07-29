@@ -1,11 +1,12 @@
 
 
-Changes
-=======
+=========
+ Changes
+=========
 
 
 1.1.0 (unreleased)
-------------------
+==================
 - Add support for Python 3. *Note* the countries vocabulary will not
   be complete on Python 3.
 - Drop the ``dolmen.builtins`` dependency.
