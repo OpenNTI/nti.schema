@@ -9,11 +9,9 @@ logger = __import__('logging').getLogger(__name__)
 # pylint: disable=W0212,R0904
 
 from hamcrest import is_
-from hamcrest import none
 from hamcrest import is_not
 from hamcrest import raises
 from hamcrest import calling
-from hamcrest import has_key
 from hamcrest import has_item
 from hamcrest import not_none
 from hamcrest import contains
@@ -47,8 +45,6 @@ from nti.schema.field import DictFromObject
 from nti.schema.field import ValidRegularExpression
 from nti.schema.field import ValidTextLine as TextLine
 
-from nti.schema.fieldproperty import createFieldProperties
-from nti.schema.fieldproperty import createDirectFieldProperties
 
 from nti.schema.interfaces import IVariant
 from nti.schema.interfaces import IBeforeDictAssignedEvent
@@ -89,27 +85,7 @@ class TestMisc(unittest.TestCase):
         assert_that(calling(olen.validate).with_args('abcdef'),
                      raises(sch_interfaces.TooLong))
 
-    def test_create_direct_field_properties(self):
 
-        class IA(interface.Interface):
-            a = TextLine(title="a")
-
-        class IB(IA):
-            b = TextLine(title="b")
-
-        class A(object):
-            createFieldProperties(IA)
-
-        class B(object):
-            createDirectFieldProperties(IB)
-
-        assert_that(A.__dict__, has_key('a'))
-        assert_that(B.__dict__, has_key('b'))
-        assert_that(B.__dict__, does_not(has_key('a')))
-
-        # And nothing extra crept in, just the four standard things
-        # __dict__, __doct__, __module__, __weakref__, and b
-        assert_that(B.__dict__, has_length(5))
 
     def test_http_url(self):
 
@@ -316,44 +292,6 @@ class TestConfigured(unittest.TestCase):
         assert_that(schema, has_entry('choice', has_entry('choices', has_item(ext))))
 
 
-from Acquisition import Implicit
-
-from ExtensionClass import Base
-
-from nti.schema.fieldproperty import AcquisitionFieldProperty
-
-from nti.testing.matchers import aq_inContextOf
-class TestAq(unittest.TestCase):
-
-    def test_aq_property(self):
-
-        class IBaz(interface.Interface):
-            pass
-
-        class IFoo(interface.Interface):
-            ob = Object(IBaz)
-
-        @interface.implementer(IBaz)
-        class Baz(object):
-            pass
-
-        class BazAQ(Implicit, Baz):
-            pass
-
-        @interface.implementer(IFoo)
-        class Foo(Base):
-            ob = AcquisitionFieldProperty(IFoo['ob'])
-
-        assert_that(Foo, has_property('ob', is_(AcquisitionFieldProperty)))
-
-        foo = Foo()
-        assert_that(foo, has_property('ob', none()))
-
-        foo.ob = Baz()
-        assert_that(foo, has_property('ob', is_not(aq_inContextOf(foo))))
-
-        foo.ob = BazAQ()
-        assert_that(foo, has_property('ob', aq_inContextOf(foo)))
 
 from nti.schema.schema import _superhash as superhash
 

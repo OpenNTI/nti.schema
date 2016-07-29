@@ -24,3 +24,4 @@ cover
 /.pydevproject
 /.settings/
 *.mo
+htmlcov
