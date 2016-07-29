@@ -72,7 +72,8 @@ def get_ui_types_from_field(field):
 
         # Can we be more specific?
         ui_type = get_ui_type_from_field_interface(field)
-        if ui_type and ui_type not in ('TextLine', 'Text'):  # Yes we can
+        if ui_type and ui_type not in ('TextLine', 'Text'): # pragma: no cover
+            # Yes we can
             ui_base_type = 'string'
         else:
             ui_type = 'string'
@@ -91,7 +92,7 @@ def get_data_from_choice_field(v, base_type=None):
     # Vocabulary could be a name or the vocabulary itself
     choices = ()
     vocabulary = None
-    if sch_interfaces.IVocabulary.providedBy(v.vocabulary):
+    if sch_interfaces.IVocabulary.providedBy(v.vocabulary): # pragma: no cover
         vocabulary = v.vocabulary
     elif isinstance(v.vocabularyName, basestring):
         name = v.vocabularyName
@@ -107,16 +108,16 @@ def get_data_from_choice_field(v, base_type=None):
                 try:
                     # like nti.externalization, but without the dependency
                     choice = term.toExternalObject()
-                except AttributeError:
+                except AttributeError: # pragma: no cover
                     choice = {'token': term.token,
                               'value': term.value,
                               'title': term.title}
 
                 choices.append(choice)
-            else:
+            else: # pragma: no cover
                 choices.append(term.token)  # bare; ideally this would go away
             tokens.append(term.token)
-        
+
         # common case, these will all be the same type
         if      not base_type \
             and all((isinstance(x, basestring) for x in tokens)):
@@ -159,7 +160,7 @@ class JsonSchemafier(object):
         """
         return get_ui_types_from_field(field)
     ui_types_from_field = get_ui_types_from_field # BWC
-    
+
     def get_data_from_choice_field(self, field, base_type=None):
         """
         Return the choices and base type for the specified field
@@ -220,5 +221,5 @@ class JsonSchemafier(object):
 
             self.post_process_field(k, v, item_schema)
             ext_schema[k] = item_schema
-            
+
         return ext_schema
