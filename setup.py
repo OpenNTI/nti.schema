@@ -42,8 +42,8 @@ setup(
     install_requires=[
         'setuptools',
         'zope.schema',
+        'zope.i18n',
         'zope.i18nmessageid',
-        'zope.browserresource',
         'zope.vocabularyregistry',
         'zope.deferredimport',
     ],
@@ -53,13 +53,12 @@ setup(
             'pyhamcrest',
             'nti.testing',
             'zope.testrunner',
-            'zope.dottedname',
-            'transaction'
         ],
         ':python_version == "2.7"': [
             # Not ported to Py3 yet; Plus, version 3 adds hard dep on
             # Products.CMFCore/Zope2 that we don't want.
             'plone.i18n < 3.0',
+            'zope.browserresource', # Used by plone.i18n implicitly
         ]
     },
     namespace_packages=['nti'],
