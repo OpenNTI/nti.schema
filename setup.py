@@ -49,6 +49,7 @@ setup(
             'nose2',
             'pyhamcrest',
             'nti.testing',
+            'zope.testrunner',
             'zope.dottedname',
             'transaction'
         ]
