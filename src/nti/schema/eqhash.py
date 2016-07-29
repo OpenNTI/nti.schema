@@ -47,6 +47,17 @@ def EqHash(*names,
     interface that defines the property names. Property names are compared
     for equality in the order they are given, so place the cheapest first.
 
+    Additional parameters are only available via keywords::
+
+      @EqHash('a', 'b')
+      class Thing(object):
+         a = 'a'
+         b = 'b'
+
+      @EqHash('c', include_super=True)
+      class ChildThing(Thing):
+         c = 'c'
+
     :keyword include_super: If set to ``True`` (*not* the default)
         then the equality (and perhaps hash) values of super will be considered.
     :keyword superhash: If set to ``True`` (*not* the default),

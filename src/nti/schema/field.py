@@ -3,13 +3,11 @@
 """
 Schema fields.
 
-Also patches a bug in the :class:`dm.zope.schema.schema.Object` class
-that requires the default value for ``check_declaration`` to be specified;
-thus always import `Object` from this module.
+These fields produce better validation errors than the standard
+:mod:`zope.schema` fields do. All the standard fields are also aliased
+to be imported from this module.
 
 .. TODO: This module is big enough it should be factored into a package and sub-modules.
-
-$Id$
 """
 
 from __future__ import print_function, unicode_literals, absolute_import, division
@@ -28,8 +26,6 @@ from zope.schema import Object as _ObjectBase
 
 from .schema import SchemaConfigured
 SchemaConfigured = SchemaConfigured
-
-from .schema import schemadict
 
 import zope.interface.common.idatetime
 
