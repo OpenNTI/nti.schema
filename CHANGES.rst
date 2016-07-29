@@ -5,6 +5,12 @@
 =========
 
 
+1.1.1 (unreleased)
+==================
+
+- Nothing changed yet.
+
+
 1.1.0 (2016-07-29)
 ==================
 - Add support for Python 3. *Note* the countries vocabulary will not
