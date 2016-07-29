@@ -39,6 +39,7 @@ setup(
     packages=find_packages('src'),
     package_dir={'': 'src'},
     include_package_data=True,
+    zip_safe=True,
     install_requires=[
         'setuptools',
         'zope.schema',
