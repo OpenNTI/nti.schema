@@ -20,6 +20,7 @@ logger = __import__('logging').getLogger(__name__)
 from nti.schema import MessageFactory as _
 
 import re
+from six import string_types
 
 from dm.zope.schema.schema import SchemaConfigured, Object as ObjectBase
 SchemaConfigured = SchemaConfigured
@@ -86,8 +87,22 @@ def _do_set(self, context, value, cls, factory):
         notify(event)
         value = event.object
         super(cls, self).set(context, value)
-    except sch_interfaces.ValidationError as e:
+    except sch_interfaces.ValidationError as e: # pragma: no cover
+        # This shouldn't happen, set() doesn't typically validate.
         self._reraise_validation_error(e, value)
+
+def __make_set(cls, eventfactory):
+
+    def set(self, context, value):
+        return _do_set(self, context, value, cls, eventfactory)
+
+    cls.set = set
+
+def __with_set(eventfactory=BeforeSchemaFieldAssignedEvent):
+    def X(cls):
+        __make_set(cls, eventfactory)
+        return cls
+    return X
 
 from nti.schema.interfaces import InvalidValue
 InvalidValue = InvalidValue
@@ -274,7 +289,7 @@ class Variant(FieldValidationMixin, schema.Field):
                 # Most common to least common
                 if sch_interfaces.IObject.providedBy(field):
                     converter = field.schema
-                elif sch_interfaces.IFromUnicode.providedBy(field) and isinstance(obj, basestring):
+                elif sch_interfaces.IFromUnicode.providedBy(field) and isinstance(obj, string_types):
                     converter = field.fromUnicode
                 elif IFromObject.providedBy(field):
                     converter = field.fromObject
@@ -304,7 +319,7 @@ class Variant(FieldValidationMixin, schema.Field):
         # Try to determine the most appropriate event to fire
         # Order matters. It would kind of be nice to direct this to the appropriate
         # field itself, but that's sort of hard.
-        types = ((basestring, BeforeTextAssignedEvent),
+        types = ((string_types, BeforeTextAssignedEvent),
                  (collections.Mapping, BeforeDictAssignedEvent),
                  (collections.Sequence, BeforeSequenceAssignedEvent),
                  (object, BeforeObjectAssignedEvent))
@@ -348,21 +363,19 @@ class Number(FieldValidationMixin, schema.Float):
     """
     _type = numbers.Number
 
+@__with_set()
 class ValidChoice(FieldValidationMixin, schema.Choice):
+    pass
 
-    def set(self, context, value):
-        _do_set(self, context, value, ValidChoice, BeforeSchemaFieldAssignedEvent)
-
+@__with_set()
 class ValidBytesLine(FieldValidationMixin, schema.BytesLine):
+    pass
 
-    def set(self, context, value):
-        _do_set(self, context, value, ValidBytesLine, BeforeSchemaFieldAssignedEvent)
-
+@__with_set()
 class ValidBytes(FieldValidationMixin, schema.Bytes):
+    pass
 
-    def set(self, context, value):
-        _do_set(self, context, value, ValidBytes, BeforeSchemaFieldAssignedEvent)
-
+@__with_set(BeforeTextAssignedEvent)
 class ValidText(FieldValidationMixin, schema.Text):
     """
     A text line that produces slightly better error messages. They will all
@@ -372,9 +385,7 @@ class ValidText(FieldValidationMixin, schema.Text):
     mechanism does not.
     """
 
-    def set(self, context, value):
-        _do_set(self, context, value, ValidText, BeforeTextAssignedEvent)
-
+@__with_set(BeforeTextLineAssignedEvent)
 class ValidTextLine(FieldValidationMixin, schema.TextLine):
     """
     A text line that produces slightly better error messages. They will all
@@ -383,9 +394,6 @@ class ValidTextLine(FieldValidationMixin, schema.TextLine):
     We also fire :class:`IBeforeTextLineAssignedEvent`, which the normal
     mechanism does not.
     """
-
-    def set(self, context, value):
-        _do_set(self, context, value, ValidTextLine, BeforeTextLineAssignedEvent)
 
 class DecodingValidTextLine(ValidTextLine):
     """
@@ -396,15 +404,12 @@ class DecodingValidTextLine(ValidTextLine):
     """
 
     def validate(self, value):
-        if not isinstance(value, self._type) and isinstance(value, basestring):
+        if isinstance(value, bytes):
             value = value.decode('utf-8')  # let raise UnicodeDecodeError
         super(DecodingValidTextLine, self).validate(value)
+        return value # tests
 
-#   def fromUnicode( self, value ):
-#       # fromUnicode calls validate, so this is probably just duplication
-#       if not isinstance( value, self._type ) and isinstance( value, basestring ):
-#           value = value.decode( 'utf-8' ) # let raise UnicodeDecodeError
-#       super(DecodingValidTextLine,self).fromUnicode( value )
+    # fromUnicode calls validate, so no need to duplicate
 
 class ValidRegularExpression(ValidTextLine):
 
@@ -428,7 +433,7 @@ class ValidURI(FieldValidationMixin, schema.URI):
             e.__doc__ = e.__doc__.replace('URI', 'URL')
             e.args = (value, e.__doc__, self.__fixup_name__)
             e.message = e.i18n_message = e.__doc__
-        else:
+        else: # pragma: no cover
             super(ValidURI, self)._fixup_validation_error_args(e, value)
 
 class HTTPURL(ValidURI):
@@ -475,13 +480,14 @@ class _ValueTypeAddingDocMixin(object):
                 mod = t.__module__ + '.' if t.__module__ and t.__module__ != '__builtin__' else ''
                 return ':class:`' + mod + t.__name__ + '`'
 
-            if isinstance(_type, type):
+            if isinstance(_type, type): # pragma: no cover
                 doc += '\nThe acceptable class is ' + _class_dir(_type) + '.'
             elif _type:
                 types = [_class_dir(t) for t in _type]
                 doc += '\nThe acceptable classes are ' + ' , '.join(types) + '.'
         return doc
 
+@__with_set(BeforeSequenceAssignedEvent)
 class IndexedIterable(_ValueTypeAddingDocMixin, FieldValidationMixin, schema.List):
     """
     An arbitrary (indexable) iterable, not necessarily a list or tuple;
@@ -491,9 +497,6 @@ class IndexedIterable(_ValueTypeAddingDocMixin, FieldValidationMixin, schema.Lis
     The values may be homogeneous by setting the value_type.
     """
     _type = None  # Override from super to not force a list
-
-    def set(self, context, value):
-        _do_set(self, context, value, IndexedIterable, BeforeSequenceAssignedEvent)
 
 @interface.implementer(IListOrTuple)
 class ListOrTuple(IndexedIterable):
@@ -558,6 +561,7 @@ class TupleFromObject(_ValueTypeAddingDocMixin, _SequenceFromObjectMixin, FieldV
         super(TupleFromObject, self).validate(value)
 
 @interface.implementer(IFromObject)
+@__with_set(BeforeDictAssignedEvent)
 class DictFromObject(_ValueTypeAddingDocMixin,
                      _SequenceFromObjectMixin,
                      FieldValidationMixin,
@@ -566,17 +570,14 @@ class DictFromObject(_ValueTypeAddingDocMixin,
     The `key_type` and `value_type` must be supporting :class:`IFromObject` or :class:`.IFromUnicode`.
     """
 
-    def set(self, context, value):
-        _do_set(self, context, value, DictFromObject, BeforeDictAssignedEvent)
-
     def _do_fromObject(self, context):
         key_converter = self._converter_for(self.key_type)
         value_converter = self._converter_for(self.value_type)
         return {key_converter(k): value_converter(v) for k, v in context.iteritems()}
 
+@__with_set(BeforeSetAssignedEvent)
 class ValidSet(_ValueTypeAddingDocMixin, FieldValidationMixin, schema.Set):
-    def set(self, context, value):
-        _do_set(self, context, value, ValidSet, BeforeSetAssignedEvent)
+    pass
 
 class UniqueIterable(ValidSet):
     """

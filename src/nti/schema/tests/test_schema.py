@@ -10,8 +10,6 @@ logger = __import__('logging').getLogger(__name__)
 
 from hamcrest import is_
 from hamcrest import is_not
-from hamcrest import raises
-from hamcrest import calling
 from hamcrest import has_item
 from hamcrest import not_none
 from hamcrest import contains
@@ -25,36 +23,23 @@ import unittest
 
 from zope import interface
 
-from zope.interface.common import interfaces as cmn_interfaces
 
-from zope.schema import Dict
-
-from zope.schema import interfaces as sch_interfaces
-
-from zope.schema.interfaces import InvalidURI
 
 from dolmen.builtins import IUnicode
 
 from nti.schema.field import Number
 from nti.schema.field import Object
-from nti.schema.field import HTTPURL
-from nti.schema.field import Variant
-from nti.schema.field import ObjectLen
-from nti.schema.field import ListOrTuple
+
+
 from nti.schema.field import DictFromObject
-from nti.schema.field import ValidRegularExpression
 from nti.schema.field import ValidTextLine as TextLine
 
 
-from nti.schema.interfaces import IVariant
+
 from nti.schema.interfaces import IBeforeDictAssignedEvent
-from nti.schema.interfaces import IBeforeSequenceAssignedEvent
 
 from nti.schema.jsonschema import JsonSchemafier
 
-from nti.schema.testing import validated_by
-from nti.schema.testing import not_validated_by
-from nti.schema.testing import verifiably_provides
 
 class TestMisc(unittest.TestCase):
 
@@ -70,189 +55,14 @@ class TestMisc(unittest.TestCase):
         assert_that(field, has_property('__name__', '__st_field_st'))
         assert_that(field, has_property('__fixup_name__', 'field'))
 
-    def test_objectlen(self):
-        # If we have the inheritance messed up, we will have problems
-        # creating, or we will have problems validating one part or the other.
-
-        olen = ObjectLen(IUnicode, max_length=5)  # default val for min_length
-
-        olen.validate('a')
-        olen.validate('')
-
-        assert_that(calling(olen.validate).with_args(object()),
-                     raises(sch_interfaces.SchemaNotProvided))
-
-        assert_that(calling(olen.validate).with_args('abcdef'),
-                     raises(sch_interfaces.TooLong))
-
-
-
-    def test_http_url(self):
-
-        http = HTTPURL(__name__='foo')
-
-        assert_that(http.fromUnicode('www.google.com'),
-                     is_('http://www.google.com'))
-
-        assert_that(http.fromUnicode('https://www.yahoo.com'),
-                     is_('https://www.yahoo.com'))
-
-        try:
-            http.fromUnicode('mailto:jason@nextthought.com')
-            self.fail("Must raise")
-        except InvalidURI as ex:
-            exception = ex
-
-        assert_that(exception, has_property('field', http))
-        assert_that(exception, has_property('value', 'mailto:jason@nextthought.com'))
-        assert_that(exception, has_property('message', 'The specified URL is not valid.'))
-
-    # def test_data_uri():
-    #   from .test_dataurl import GIF_DATAURL
-    #   field = DataURI(__name__='foo')
-
-    #   url = field.fromUnicode(GIF_DATAURL)
-
-    #   assert_that( url, has_property( 'mimeType', 'image/gif') )
-    #   assert_that( url, has_property( 'data', is_not( none() ) ) )
-
-    def test_regex(self):
-        field = ValidRegularExpression('[bankai|shikai]', flags=0)
-        assert_that(field.constraint("bankai"), is_(True))
-        assert_that(field.constraint("shikai"), is_(True))
-        assert_that(field.constraint("Shikai"), is_(False))
-        assert_that(field.constraint("foo"), is_(False))
-        field = ValidRegularExpression('[bankai|shikai]')
-        assert_that(field.constraint("Shikai"), is_(True))
-        assert_that(field.constraint("banKAI"), is_(True))
-
-    def test_variant(self):
-
-        syntax_or_lookup = Variant((Object(cmn_interfaces.ISyntaxError),
-                                    Object(cmn_interfaces.ILookupError),
-                                    Object(IUnicode)))
-
-        assert_that(syntax_or_lookup, verifiably_provides(IVariant))
-
-        # validates
-        assert_that(SyntaxError(), validated_by(syntax_or_lookup))
-        assert_that(LookupError(), validated_by(syntax_or_lookup))
-
-        # doesn't validate
-        assert_that(b'foo', not_validated_by(syntax_or_lookup))
-
-        assert_that(syntax_or_lookup.fromObject('foo'), is_('foo'))
-
-        assert_that(calling(syntax_or_lookup.fromObject).with_args(object()),
-                     raises(TypeError))
-
-        # cover
-        syntax_or_lookup.getDoc()
-
-    def test_complex_variant(self):
-
-        dict_field = Dict(key_type=TextLine(), value_type=TextLine())
-        string_field = Object(IUnicode)
-        list_of_numbers_field = ListOrTuple(value_type=Number())
-
-        variant = Variant((dict_field, string_field, list_of_numbers_field))
-        variant.getDoc()  # cover
-        # It takes all these things
-        for d in { 'k': 'v'}, 'foo', [1, 2, 3]:
-            assert_that(d, validated_by(variant))
-
-        # It rejects these
-        for d in {'k': 1}, b'foo', [1, 2, 'b']:
-            assert_that(d, not_validated_by(variant))
-
-        # A name set now is reflected down the line
-        variant.__name__ = 'baz'
-        for f in variant.fields:
-            assert_that(f, has_property('__name__', 'baz'))
-
-        # and in clones
-        clone = variant.bind(object())
-        for f in clone.fields:
-            assert_that(f, has_property('__name__', 'baz'))
-
-        # which doesn't change the original
-        clone.__name__ = 'biz'
-        for f in clone.fields:
-            assert_that(f, has_property('__name__', 'biz'))
-
-        for f in variant.fields:
-            assert_that(f, has_property('__name__', 'baz'))
-
-        # new objects work too
-        new = Variant(variant.fields, __name__='boo')
-        for f in new.fields:
-            assert_that(f, has_property('__name__', 'boo'))
-
+from . import SchemaLayer
 from zope.component import eventtesting
 
-from zope.testing import cleanup
-
-from nti.schema.tests import ZopeComponentLayer
-from nti.schema.tests import ConfiguringLayerMixin
-
-class SchemaLayer(ZopeComponentLayer,
-                  ConfiguringLayerMixin):
-
-    set_up_packages = ('nti.schema',)
-
-    @classmethod
-    def setUp(cls):
-        cls.setUpPackages()
-
-    @classmethod
-    def tearDown(cls):
-        cls.tearDownPackages()
-        cleanup.cleanUp()
-
-    @classmethod
-    def testSetUp(cls, test=None):
-        pass
-
-    testTearDown = testSetUp
 
 class TestConfigured(unittest.TestCase):
 
     layer = SchemaLayer
 
-    def test_nested_variants(self):
-        # Use case: Chat messages are either a Dict, or a N
-        # ote-like body, which itself is a list of variants
-
-        dict_field = Dict(key_type=TextLine(), value_type=TextLine())
-
-        string_field = Object(IUnicode)
-        number_field = Number()
-        list_of_strings_or_numbers = ListOrTuple(value_type=Variant((string_field, number_field)))
-
-        assert_that([1, '2'], validated_by(list_of_strings_or_numbers))
-        assert_that({'k': 'v'}, validated_by(dict_field))
-
-        dict_or_list = Variant((dict_field, list_of_strings_or_numbers))
-
-        assert_that([1, '2'], validated_by(dict_or_list))
-        assert_that({'k': 'v'}, validated_by(dict_or_list))
-
-        class X(object):
-            pass
-
-        x = X()
-        dict_or_list.set(x, [1, '2'])
-
-        events = eventtesting.getEvents(IBeforeSequenceAssignedEvent)
-        assert_that(events, has_length(1))
-        assert_that(events, contains(has_property('object', [1, '2'])))
-
-        eventtesting.clearEvents()
-
-        dict_or_list.set(x, {'k': 'v'})
-        events = eventtesting.getEvents(IBeforeDictAssignedEvent)
-        assert_that(events, has_length(1))
-        assert_that(events, contains(has_property('object', {'k': 'v'})))
 
     def test_dict(self):
 
