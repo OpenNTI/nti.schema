@@ -13,7 +13,6 @@ logger = __import__('logging').getLogger(__name__)
 
 import sys
 
-from zope import interface
 from zope.schema import interfaces as sch_interfaces
 
 # Re-export some things as part of our public API so we can
@@ -23,16 +22,8 @@ from zope.schema.fieldproperty import FieldProperty
 from zope.schema.fieldproperty import createFieldProperties
 from zope.schema.fieldproperty import FieldPropertyStoredThroughField
 
-try:
-    from Acquisition import aq_base
-    from Acquisition.interfaces import IAcquirer
-except ImportError:
-    class IAcquirer(interface.Interface):
-        """
-        Placeholder because Acquisition is not installed
-        """
-    def aq_base(o):
-        return o
+from Acquisition import aq_base
+from Acquisition.interfaces import IAcquirer
 
 class AcquisitionFieldProperty(FieldProperty):
     """
@@ -58,9 +49,30 @@ class UnicodeConvertingFieldProperty(FieldProperty):
     """
 
     def __set__(self, inst, value):
-        if value and not isinstance(value, unicode):
+        if isinstance(value, bytes):
             value = value.decode('utf-8')
         super(UnicodeConvertingFieldProperty, self).__set__(inst, value)
+
+def _find_schema_from_field(field):
+    if not sch_interfaces.IObject.providedBy(field) and not hasattr(field, 'schema'):
+        raise sch_interfaces.WrongType("Don't know how to get schema from %s" % field)
+    return field.schema
+
+def _make_adapter_set(klass):
+
+    def __set__(self, inst, value):
+        try:
+            super(klass, self).__set__(inst, value)
+        except sch_interfaces.SchemaNotProvided:
+            try:
+                value = self.schema(value)
+            except TypeError:
+                # Let's raise the better error when we call again
+                pass
+
+            super(klass, self).__set__(inst, value)
+
+    return __set__
 
 class AdaptingFieldProperty(FieldProperty):
     """
@@ -70,17 +82,10 @@ class AdaptingFieldProperty(FieldProperty):
     """
 
     def __init__(self, field, name=None):
-        if not sch_interfaces.IObject.providedBy(field):
-            raise sch_interfaces.WrongType("Don't know how to get schema from %s" % field)
-        self.schema = field.schema
-
+        self.schema = _find_schema_from_field(field)
         super(AdaptingFieldProperty, self).__init__(field, name=name)
 
-    def __set__(self, inst, value):
-        try:
-            super(AdaptingFieldProperty, self).__set__(inst, value)
-        except sch_interfaces.SchemaNotProvided:
-            super(AdaptingFieldProperty, self).__set__(inst, self.schema(value))
+AdaptingFieldProperty.__set__ =  _make_adapter_set(AdaptingFieldProperty)
 
 class AdaptingFieldPropertyStoredThroughField(FieldPropertyStoredThroughField):
     """
@@ -90,16 +95,10 @@ class AdaptingFieldPropertyStoredThroughField(FieldPropertyStoredThroughField):
     """
 
     def __init__(self, field, name=None):
-        if not sch_interfaces.IObject.providedBy(field):
-            raise sch_interfaces.WrongType()
-        self.schema = field.schema
+        self.schema = _find_schema_from_field(field)
         super(AdaptingFieldPropertyStoredThroughField, self).__init__(field, name=name)
 
-    def __set__(self, inst, value):
-        try:
-            super(AdaptingFieldPropertyStoredThroughField, self).__set__(inst, value)
-        except sch_interfaces.SchemaNotProvided:
-            super(AdaptingFieldPropertyStoredThroughField, self).__set__(inst, self.schema(value))
+AdaptingFieldPropertyStoredThroughField.__set__ =  _make_adapter_set(AdaptingFieldPropertyStoredThroughField)
 
 def createDirectFieldProperties(__schema, omit=(), adapting=False):
     """
