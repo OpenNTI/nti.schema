@@ -9,6 +9,21 @@ Helpers for hashing and equality based on a list of names.
 from __future__ import print_function,  absolute_import, division
 __docformat__ = "restructuredtext en"
 
+import operator
+
+def _superhash_force(value):
+    # Called when we know that we can't hash the value.
+    # Dict?
+    try:
+        # Sort these, they have no order
+        items = sorted(value.items())
+    except AttributeError:
+        # mutable iterable, which we must not sort
+        items = value
+
+    return tuple([_superhash(item)
+                  for item
+                  in items])
 
 def _superhash(value):
     """
@@ -16,24 +31,15 @@ def _superhash(value):
     or a tuple that can in turn be hashed
     """
     try:
-        # By returning the original value, if it was hashable,
+        # We used to think that by returning the original value, if it was hashable,
         # we may get better ultimate hash results;
-        # the cost is hashing that value twice
-        hash(value)
+        # the cost is hashing that value twice.
+        # However, Python guarantees that the hash of an integer
+        # *is* the integer (with a few exceptions), so we should be
+        # just fine returning the hash value.
+        return hash(value)
     except TypeError:
-        # Dict?
-        try:
-            # Sort these, they have no order
-            items = sorted(value.items())
-        except AttributeError:
-            # mutable iterable, which we must not sort
-            items = value
-
-        return tuple([_superhash(item)
-                      for item
-                      in items])
-    else:
-        return value
+        return _superhash_force(value)
 
 def EqHash(*names,
            **kwargs):
@@ -152,27 +158,90 @@ def _eq_hash(cls, names, include_super, include_type, superhash): # pylint:disab
     # being hashed from this object. However, for consistency,
     # we always include it if asked
     seed = hash(names)
+    if include_type:
+        seed += hash(cls)
 
     if superhash:
-        def _hash(values):
-            # We're hashing the sequence of superhash values
-            # for each value; we could probably do better?
-            return hash( tuple([_superhash(x) for x in values]) )
-    else:
-        def _hash(values):
-            return hash(tuple(values))
+        # We assume that instances that use superhash will have
+        # roughly the same shape, and not all attributes will need to be
+        # super-hashed. When an attribute does need to be super-hashed, it will
+        # need to be super-hashed for all instances. Worst case scenario, this winds up
+        # always using the superhash for all attributes of all instances, but if we're lucky
+        # only a small number of the same attributes will need to be superhashed.
 
+        class Transformers(list):
+            mutated = False
+
+        transformers = Transformers([None for name in names])
+
+        def _hash(values):
+            # Hopefully in most cases everything is actually hashable.
+            # This gets our overhead down to the lowest possible.
+            if not transformers.mutated:
+                try:
+                    return hash(values)
+                except TypeError:
+                    pass
+
+            # Ok, we found something that can't actually be hashed. Darn.
+            # Replace every non-Hashable transformer with a call to superhash.
+            transformers.mutated = True
+            # Snap. Lets hope that we already checked on what needs to be superhashed
+            # and if so we'll try that.
+            try:
+                return hash(tuple([transformer(value) if transformer is not None else value
+                                  for transformer, value
+                                  in zip(transformers, values)]))
+            except TypeError:
+                # Snap. Something changed.
+                for i, value in enumerate(values):
+                    if transformers[i] is _superhash_force:
+                        try:
+                            _superhash_force(value)
+                        except TypeError:
+                            # OK, this field alternates between
+                            # being hashable and nat being hashable. Deal with that.
+                            transformers[i] = _superhash
+
+                    try:
+                        # We could check isinstance(value, collections.Hashable), but
+                        # this is slightly more general, albeit probably slower.
+                        hash(value)
+                    except TypeError:
+                        transformers[i] = _superhash_force
+
+            # Ok, good to go. Let's try it.
+            return hash(tuple([transformer(value) if transformer is not None else value
+                              for transformer, value
+                              in zip(transformers, values)]))
+    else:
+        # No need to try to wrap in a tuple or anything, we can
+        # just directly call the hash builtin. We'll get passed either
+        # a tuple of values.
+        _hash = hash
+
+
+    # Unlike __eq__, we use operator.attrgetter because we're always
+    # going to request all the names. In tests, this is ~30% faster than
+    # a manual loop (for two to three names).
+    if not names:
+        # Well, ok, nothing special in this class. We can't pass that to attrgetter,
+        # though, it needs at least one name. Make sure to return a tuple for
+        # consistency.
+        def attrgetter(_):
+            return 42,
+    else:
+        # This will return a tuple of the values of the names.
+        attrgetter = operator.attrgetter(*names)
     def __hash__(self):
         h = seed
         if include_super:
             h ^= superclass_hash(self) << 2
 
         # If we or-equal for every attribute separately, we
-        # easily run the risk of saturating the integer. So we boil
-        # all attributes down to one value to hash
-        if names:
-            ga = getattr
-            h ^= _hash( [ga(self, name) for name in names] )
+        # easily run the risk of saturating the integer. So we callect
+        # all attributes down to one tuple to hash
+        h ^= _hash( attrgetter(self) )
         return h
 
     return __eq__, __hash__, __ne__
