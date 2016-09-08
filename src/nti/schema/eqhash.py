@@ -36,10 +36,13 @@ def _superhash(value):
         # the cost is hashing that value twice.
         # However, Python guarantees that the hash of an integer
         # *is* the integer (with a few exceptions), so we should be
-        # just fine returning the hash value.
-        return hash(value)
+        # just fine returning the hash value....except, Python 3 changes this
+        # and the hash is less often the same. So we go back to hashing things twice.
+        hash(value)
     except TypeError:
         return _superhash_force(value)
+    else:
+        return value
 
 def EqHash(*names,
            **kwargs):

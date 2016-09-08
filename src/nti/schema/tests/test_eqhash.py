@@ -179,7 +179,7 @@ class TestSuperHash(unittest.TestCase):
 
         assert_that(superhash(d),
                     is_(
-                        (hash((1, 1)), # Flattened
+                        ((1, 1),
                          (2, (1, 2, 3)),
                          (3, ((4, (4, 5, 6)),)))
                     ))
