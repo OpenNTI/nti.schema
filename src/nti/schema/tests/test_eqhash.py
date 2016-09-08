@@ -112,6 +112,12 @@ class TestEqHash(unittest.TestCase):
         assert_that(hash(thing_superhash2), is_(hash(thing_superhash)))
         assert_that(hash(thing_superhash2), is_(hash(thing_superhash)))
 
+        # One more mutation for coverage
+        thing_superhash.a = athing
+        thing_superhash2.a = athing
+        assert_that(hash(thing_superhash2), is_(hash(thing_superhash)))
+        assert_that(hash(thing_superhash2), is_(hash(thing_superhash)))
+
 
     def test_eq_hash_classes(self):
         # Default doesn't include classes

@@ -198,6 +198,11 @@ def _eq_hash(cls, names, include_super, include_type, superhash): # pylint:disab
             except TypeError:
                 # Snap. Something changed.
                 for i, value in enumerate(values):
+                    if transformers[i] is _superhash:
+                        # We've reached our limit. Nothing else to do
+                        # for this one.
+                        continue
+
                     if transformers[i] is _superhash_force:
                         try:
                             _superhash_force(value)
