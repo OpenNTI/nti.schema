@@ -34,11 +34,14 @@ class Thing2(object):
     a = 'a'
     b = 'b'
 
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
 @EqHash('a', 'b', include_type=True)
 class NotThing(object):
     a = 'a'
     b = 'b'
-
 
 @EqHash('c', include_super=True)
 class ChildThing(Thing):
@@ -47,6 +50,10 @@ class ChildThing(Thing):
 @EqHash('c', include_super=False)
 class ChildThingNoSuper(Thing):
     c = 'c'
+
+@EqHash(include_super=True)
+class ChildThingNoNames(Thing):
+    pass
 
 class TestEqHash(unittest.TestCase):
 
@@ -71,6 +78,47 @@ class TestEqHash(unittest.TestCase):
         assert thing1 != thing2
         assert thing1 != self # NotImplemented
 
+    def test_eq_hash_mutates(self):
+
+        thing_nosuperhash = Thing()
+        thing_superhash = Thing2() # initially, no superhashing required
+
+        assert_that(hash(thing_nosuperhash), is_(hash(thing_superhash)))
+
+        # Ok, mutate one of the attributes to require superhashing
+        thing_superhash.a = [1, 2]
+        assert_that(hash(thing_superhash), is_(hash(thing_superhash)))
+
+        thing_superhash2 = Thing2()
+        thing_superhash2.a = [1, 2]
+        assert_that(hash(thing_superhash2), is_(hash(thing_superhash)))
+        # And again, to prove we don't change unnecessarily
+        assert_that(hash(thing_superhash2), is_(hash(thing_superhash)))
+        # But we can mutate the other attribute and we will change
+        # hash strategies
+        thing_superhash.b = {}
+        thing_superhash2.b = {}
+        assert_that(hash(thing_superhash2), is_(hash(thing_superhash)))
+        assert_that(hash(thing_superhash2), is_(hash(thing_superhash)))
+
+        # OK, now that we've mutated, mutate again to something that's
+        # not a dictionary, but is hashable and isn't iterable.
+        class AThing(object):
+            pass
+        athing = AThing()
+        hash(athing)
+        thing_superhash.b = athing
+        thing_superhash2.b = athing
+        assert_that(hash(thing_superhash2), is_(hash(thing_superhash)))
+        assert_that(hash(thing_superhash2), is_(hash(thing_superhash)))
+
+        # One more mutation for coverage
+        thing_superhash.a = athing
+        thing_superhash2.a = athing
+        assert_that(hash(thing_superhash2), is_(hash(thing_superhash)))
+        assert_that(hash(thing_superhash2), is_(hash(thing_superhash)))
+
+
     def test_eq_hash_classes(self):
         # Default doesn't include classes
 
@@ -93,6 +141,11 @@ class TestEqHash(unittest.TestCase):
         thing1.a = 'A'
         assert_that(thing1, is_not(thing2))
         assert_that(hash(thing1), is_not(hash(thing2)))
+
+        thing3 = ChildThingNoNames()
+        thing4 = ChildThingNoNames()
+        assert_that(thing3, is_(thing4))
+        assert_that(hash(thing3), is_(hash(thing4)))
 
     def test_eq_hash_no_super(self):
         thing1 = ChildThingNoSuper()
@@ -139,3 +192,41 @@ class TestSuperHash(unittest.TestCase):
 
         assert_that(hash(superhash(d)),
                     is_(-6213620179105025536))
+
+
+def bench_hash():
+    import timeit
+    import statistics
+
+
+    timer = timeit.Timer('hash(thing)', 'from nti.schema.tests.test_eqhash import Thing as Thing; thing=Thing()')
+    times = timer.repeat()
+    print("Avg Base  hash", statistics.mean(times), "stddev", statistics.stdev(times))
+
+    timer = timeit.Timer('hash(thing)', 'from nti.schema.tests.test_eqhash import ChildThing as Thing; thing=Thing()')
+    times = timer.repeat()
+    print("Avg Child hash", statistics.mean(times), "stddev", statistics.stdev(times))
+
+    timer = timeit.Timer('hash(thing)', 'from nti.schema.tests.test_eqhash import Thing2 as Thing; thing=Thing()')
+    times = timer.repeat()
+    print("Avg Super  hash", statistics.mean(times), "stddev", statistics.stdev(times))
+
+    timer = timeit.Timer('hash(thing)', 'from nti.schema.tests.test_eqhash import Thing2 as Thing; thing=Thing(a={})')
+#    import cProfile
+#    import pstats
+#    pr = cProfile.Profile()
+#    pr.enable()
+    times = timer.repeat()
+#    pr.disable()
+#    ps = pstats.Stats(pr).sort_stats('cumulative')
+#    ps.print_stats(.4)
+
+    print("Avg Super2  hash", statistics.mean(times), "stddev", statistics.stdev(times))
+
+
+if __name__ == '__main__':
+    import sys
+    if '--timehash' in sys.argv:
+        bench_hash()
+    else:
+        unittest.main()
