@@ -11,6 +11,8 @@ __docformat__ = "restructuredtext en"
 
 import operator
 
+import six
+
 def _superhash_force(value):
     # Called when we know that we can't hash the value.
     # Dict?
@@ -102,52 +104,50 @@ def EqHash(*names,
         return cls
     return x
 
+def _make_eq(cls, names, include_super, include_type):
+    # 1 and 0 are constants and faster to load than the globals True/False
+    # (in python 2)
+
+    eq_stmt = 'def __eq__(self, other'
+    if include_type or include_super:
+        # capture the type
+        eq_stmt += ', cls=cls'
+    eq_stmt += '):\n'
+    eq_stmt += '    if self is other: return 1\n'
+    if include_type:
+        eq_stmt += '    if not isinstance(other, cls): return 0\n'
+    if include_super:
+        eq_stmt += '    s = super(cls, self).__eq__(other)\n'
+        eq_stmt += '    if s is NotImplemented or not s: return s\n'
+
+    # We take these one at a time (rather than using
+    # operator.attrgetter). In the cases where some attributes
+    # are computed, this can be more efficient if we discover
+    # a mismatch early. Also, it lets us easily distinguish
+    # between an AttributeError on self (which is a
+    # programming error in calling EqHash) or the other object
+    for name in names:
+        eq_stmt += '    a = self.' + name + '\n'
+        eq_stmt += '    try:\n        b = other.' + name + '\n'
+        eq_stmt += '    except AttributeError: return NotImplemented\n'
+        eq_stmt += '    if a != b: return 0\n\n'
+
+    eq_stmt += '    return 1'
+
+    # Must use a custom dictionary under Py3
+    lcls = dict(locals())
+    six.exec_(eq_stmt, globals(), lcls)
+
+    return lcls['__eq__']
+
 def _eq_hash(cls, names, include_super, include_type, superhash): # pylint:disable=I0011,W0622,R0912
     names = tuple((str(x) for x in names)) # make sure they're native strings, not unicode on Py2
     # We assume the class hierarchy of these objects does not change
     if include_super:
         superclass = cls.__mro__[1]
-        superclass_eq = superclass.__eq__
         superclass_hash = superclass.__hash__
 
-    # 1 and 0 are constants and faster to load than the globals True/False
-    # (in python 2)
-
-    def __eq__(self, other):
-        if self is other:
-            return 1
-
-        if include_type:
-            if not isinstance(other, cls):
-                return 0
-
-        if include_super:
-            s = superclass_eq(self, other)
-            if s is NotImplemented or not s:
-                return s
-
-
-        # We take these one at a time (rather than using
-        # operator.attrgetter). In the cases where some attributes
-        # are computed, this can be more efficient if we discover
-        # a mismatch early. Also, it lets us easily distinguish
-        # between an AttributeError on self (which is a
-        # programming error in calling EqHash) or the other object
-        _ga = getattr # load_fast in the loop
-        for name in names:
-            my_val = _ga(self, name)
-            try:
-                other_val =_ga(other, name)
-            except AttributeError:
-                return NotImplemented
-            else:
-                # Amusingly, even though this does
-                # more push/pop than inlining in the
-                # body of the try block, it benchmarks
-                # faster
-                if my_val != other_val:
-                    return 0
-        return 1
+    __eq__ = _make_eq(cls, names, include_super, include_type)
 
     def __ne__(self, other):
         eq = __eq__(self, other)
@@ -228,7 +228,6 @@ def _eq_hash(cls, names, include_super, include_type, superhash): # pylint:disab
         # a tuple of values.
         _hash = hash
 
-
     # Unlike __eq__, we use operator.attrgetter because we're always
     # going to request all the names. In tests, this is ~30% faster than
     # a manual loop (for two to three names).
@@ -237,10 +236,11 @@ def _eq_hash(cls, names, include_super, include_type, superhash): # pylint:disab
         # though, it needs at least one name. Make sure to return a tuple for
         # consistency.
         def attrgetter(_):
-            return 42,
+            return ()
     else:
         # This will return a tuple of the values of the names.
         attrgetter = operator.attrgetter(*names)
+
     def __hash__(self):
         h = seed
         if include_super:
