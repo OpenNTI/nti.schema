@@ -41,6 +41,7 @@ setup(
     include_package_data=True,
     zip_safe=True,
     install_requires=[
+        'six',
         'setuptools',
         'zope.schema',
         'zope.i18n',
