@@ -8,7 +8,7 @@
 1.1.2 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Acquisition is a required dependency.
 
 
 1.1.1 (2016-09-08)
