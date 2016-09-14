@@ -5,7 +5,7 @@
 =========
 
 
-1.1.2 (unreleased)
+1.1.2 (2016-09-14)
 ==================
 
 - Add ``Acquisition`` and ``zope.event`` as install dependencies.
