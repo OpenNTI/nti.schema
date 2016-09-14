@@ -8,7 +8,8 @@
 1.1.2 (unreleased)
 ==================
 
-- Acquisition and zope.event are required dependencies.
+- Add ``Acquisition`` and ``zope.event`` as install dependencies.
+  Previously they were only pulled in via the ``test`` extra.
 
 
 1.1.1 (2016-09-08)
