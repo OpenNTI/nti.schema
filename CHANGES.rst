@@ -8,7 +8,7 @@
 1.1.2 (unreleased)
 ==================
 
-- Acquisition is a required dependency.
+- Acquisition and zope.event are required dependencies.
 
 
 1.1.1 (2016-09-08)

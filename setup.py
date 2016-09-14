@@ -44,6 +44,7 @@ setup(
         'Acquisition',
         'six',
         'setuptools',
+        'zope.event',
         'zope.schema',
         'zope.i18n',
         'zope.i18nmessageid',
