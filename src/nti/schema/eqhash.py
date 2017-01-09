@@ -175,7 +175,7 @@ def _eq_hash(cls, names, include_super, include_type, superhash): # pylint:disab
         class Transformers(list):
             mutated = False
 
-        transformers = Transformers([None for name in names])
+        transformers = Transformers([None for _ in names])
 
         def _hash(values):
             # Hopefully in most cases everything is actually hashable.
