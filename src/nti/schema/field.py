@@ -139,7 +139,7 @@ class FieldValidationMixin(object):
             self._fixup_validation_error_no_args(e, value)
         elif isinstance(e, sch_interfaces.TooShort) and len(e.args) == 2:
             # Note we're capitalizing the field in the message.
-            e.i18n_message = _('${field} is too short.',
+            e.i18n_message = _('${field} is too short. Please use at least ${minLength} characters.',
                                 mapping={'field': self.__fixup_name__.capitalize(),
                                         'minLength': e.args[1]})
             e.args = (self.__fixup_name__.capitalize() + ' is too short.',
