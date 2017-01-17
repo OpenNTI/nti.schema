@@ -5,7 +5,7 @@
 =========
 
 
-1.1.3 (unreleased)
+1.1.3 (2017-01-17)
 ==================
 
 - Add info to minLength validation message.
