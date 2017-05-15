@@ -6,7 +6,7 @@ Helpers for writing code that implements schemas.
 This module contains code based on code originally from dm.zope.schema.
 """
 
-from __future__ import print_function, absolute_import, division
+from __future__ import absolute_import, print_function, division
 __docformat__ = "restructuredtext en"
 
 from zope import interface

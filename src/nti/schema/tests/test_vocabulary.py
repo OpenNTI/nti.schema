@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
-
-logger = __import__('logging').getLogger(__name__)
+from __future__ import print_function, absolute_import, division
 
 # disable: accessing protected members, too many methods
 # pylint: disable=W0212,R0904
@@ -36,8 +33,8 @@ class TestConfiguredVocabulary(unittest.TestCase):
         from zope.schema import Choice
 
         class IA(interface.Interface):
-            choice = Choice(title="Choice",
-                            vocabulary="Countries")
+            choice = Choice(title=u"Choice",
+                            vocabulary=u"Countries")
 
         o = object()
 

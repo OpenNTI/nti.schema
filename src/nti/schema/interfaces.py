@@ -6,7 +6,7 @@ Interfaces describing the events and fields this package uses.
 Also utility functions.
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
+from __future__ import print_function, absolute_import, division
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
@@ -24,11 +24,11 @@ class IBeforeSchemaFieldAssignedEvent(interface.Interface):
     The interface :class:`.IBeforeObjectAssignedEvent` is a sub-interface
     of this one.
     """
-    object = interface.Attribute("The object that is going to be assigned. Subscribers may modify this")
+    object = interface.Attribute(u"The object that is going to be assigned. Subscribers may modify this")
 
-    name = interface.Attribute("The name of the attribute under which the object will be assigned.")
+    name = interface.Attribute(u"The name of the attribute under which the object will be assigned.")
 
-    context = interface.Attribute("The context object where the object will be assigned to.")
+    context = interface.Attribute(u"The context object where the object will be assigned to.")
 
 # Make this a base of the zope interface so our handlers
 # are compatible
@@ -47,14 +47,14 @@ class IBeforeTextAssignedEvent(IBeforeSchemaFieldAssignedEvent):
     Event for assigning text.
     """
 
-    object = schema.Text(title="The text being assigned.")
+    object = schema.Text(title=u"The text being assigned.")
 
 class IBeforeTextLineAssignedEvent(IBeforeTextAssignedEvent):  # ITextLine extends IText
     """
     Event for assigning text lines.
     """
 
-    object = schema.TextLine(title="The text being assigned.")
+    object = schema.TextLine(title=u"The text being assigned.")
 
 class IBeforeContainerAssignedEvent(IBeforeSchemaFieldAssignedEvent):
     """
@@ -71,7 +71,7 @@ class IBeforeCollectionAssignedEvent(IBeforeIterableAssignedEvent):
     Event for assigning collections.
     """
 
-    object = interface.Attribute("The collection being assigned. May or may not be mutable.")
+    object = interface.Attribute(u"The collection being assigned. May or may not be mutable.")
 
 class IBeforeSetAssignedEvent(IBeforeCollectionAssignedEvent):
     """
@@ -83,7 +83,7 @@ class IBeforeSequenceAssignedEvent(IBeforeCollectionAssignedEvent):
     Event for assigning sequences.
     """
 
-    object = interface.Attribute("The sequence being assigned. May or may not be mutable.")
+    object = interface.Attribute(u"The sequence being assigned. May or may not be mutable.")
 
 class IBeforeDictAssignedEvent(IBeforeIterableAssignedEvent):
     """

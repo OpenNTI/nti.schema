@@ -2,11 +2,9 @@
 # -*- coding: utf-8 -*-
 """
 
-
-.. $Id$
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
+from __future__ import print_function, absolute_import, division
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
@@ -76,19 +74,19 @@ class TestObjectLen(unittest.TestCase):
 
         olen = ObjectLen(IUnicode, max_length=5)  # default val for min_length
 
-        olen.validate('a')
-        olen.validate('')
+        olen.validate(u'a')
+        olen.validate(u'')
 
         assert_that(calling(olen.validate).with_args(object()),
                      raises(SchemaNotProvided))
 
-        assert_that(calling(olen.validate).with_args('abcdef'),
+        assert_that(calling(olen.validate).with_args(u'abcdef'),
                      raises(TooLong))
 
     def test_objectlen_short(self):
         olen = ObjectLen(IUnicode, min_length=5)
 
-        assert_that(calling(olen.validate).with_args('abc'),
+        assert_that(calling(olen.validate).with_args(u'abc'),
                      raises(TooShort))
 
 class TestHTTPUrl(unittest.TestCase):
@@ -130,7 +128,7 @@ class TestVariant(unittest.TestCase):
         # doesn't validate
         assert_that(b'foo', not_validated_by(syntax_or_lookup))
 
-        assert_that(syntax_or_lookup.fromObject('foo'), is_('foo'))
+        assert_that(syntax_or_lookup.fromObject(u'foo'), is_(u'foo'))
 
         assert_that(calling(syntax_or_lookup.fromObject).with_args(object()),
                      raises(TypeError))
@@ -147,11 +145,11 @@ class TestVariant(unittest.TestCase):
         variant = Variant((dict_field, string_field, list_of_numbers_field))
         variant.getDoc()  # cover
         # It takes all these things
-        for d in { 'k': 'v'}, 'foo', [1, 2, 3]:
+        for d in {u'k': u'v'}, u'foo', [1, 2, 3]:
             assert_that(d, validated_by(variant))
 
         # It rejects these
-        for d in {'k': 1}, b'foo', [1, 2, 'b']:
+        for d in {u'k': 1}, b'foo', [1, 2, u'b']:
             assert_that(d, not_validated_by(variant))
 
         # A name set now is reflected down the line
@@ -199,7 +197,7 @@ class TestVariant(unittest.TestCase):
         assert_that(field.fromObject("1.0"),
                     is_(1.0))
 
-        assert_that(calling(field.validate).with_args('1.0'),
+        assert_that(calling(field.validate).with_args(u'1.0'),
                     raises(SchemaNotProvided))
 
     def test_invalid_construct(self):
@@ -220,19 +218,19 @@ class TestConfiguredVariant(unittest.TestCase):
         number_field = Number()
         list_of_strings_or_numbers = ListOrTuple(value_type=Variant((string_field, number_field)))
 
-        assert_that([1, '2'], validated_by(list_of_strings_or_numbers))
-        assert_that({'k': 'v'}, validated_by(dict_field))
+        assert_that([1, u'2'], validated_by(list_of_strings_or_numbers))
+        assert_that({u'k': u'v'}, validated_by(dict_field))
 
         dict_or_list = Variant((dict_field, list_of_strings_or_numbers))
 
-        assert_that([1, '2'], validated_by(dict_or_list))
-        assert_that({'k': 'v'}, validated_by(dict_or_list))
+        assert_that([1, u'2'], validated_by(dict_or_list))
+        assert_that({u'k': u'v'}, validated_by(dict_or_list))
 
         class X(object):
             pass
 
         x = X()
-        dict_or_list.set(x, [1, '2'])
+        dict_or_list.set(x, [1, u'2'])
 
         events = eventtesting.getEvents(IBeforeSequenceAssignedEvent)
         assert_that(events, has_length(1))
@@ -240,7 +238,7 @@ class TestConfiguredVariant(unittest.TestCase):
 
         eventtesting.clearEvents()
 
-        dict_or_list.set(x, {'k': 'v'})
+        dict_or_list.set(x, {u'k': u'v'})
         events = eventtesting.getEvents(IBeforeDictAssignedEvent)
         assert_that(events, has_length(1))
         assert_that(events, contains(has_property('object', {'k': 'v'})))

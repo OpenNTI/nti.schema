@@ -12,13 +12,9 @@ vocabulary named ``Countries`` available::
   class IA(interface.Interface):
     choice = Choice(title="Choice",
                      vocabulary="Countries")
-
-
-
-.. $Id$
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
+from __future__ import print_function, absolute_import, division
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
@@ -36,6 +32,8 @@ except ImportError:
     class _ICountryAvailability(interface.Interface):
         def getCountries():
             ""
+
+
 @interface.implementer(_ICountryAvailability)
 class _CountryAvailabilityFallback(object):
 
@@ -67,10 +65,12 @@ class CountryTerm(_SimpleTerm):
         return cls(value, token, title, flag=flag)
 
     def toExternalObject(self):
-        return { 'token': self.token,
-                 'title': self.title,
-                 'value': self.value,
-                 'flag': self.flag }
+        return {
+            'token': self.token,
+            'title': self.title,
+            'value': self.value,
+            'flag': self.flag
+        }
 
 class _CountryVocabulary(_SimpleVocabulary):
     """

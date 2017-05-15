@@ -3,10 +3,9 @@
 """
 Test support for schemas and interfaces, mostly in the form of Hamcrest matchers.
 
-.. $Id$
 """
 
-from __future__ import print_function, absolute_import, division
+from __future__ import print_function, division
 
 from zope.deferredimport import deprecatedFrom
 

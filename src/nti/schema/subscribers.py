@@ -3,10 +3,9 @@
 """
 Event handlers.
 
-.. $Id$
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
+from __future__ import print_function, absolute_import, division
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
@@ -27,4 +26,4 @@ def before_object_assigned_event_dispatcher(event):
 
     This is analogous to :func:`zope.component.event.objectEventNotify`
     """
-    handle( event.object, event.context, event )
+    handle(event.object, event.context, event)

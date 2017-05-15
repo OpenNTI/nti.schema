@@ -2,11 +2,9 @@
 # -*- coding: utf-8 -*-
 """
 
-
-.. $Id$
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
+from __future__ import print_function, absolute_import, division
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
@@ -87,7 +85,7 @@ class TestCreateFieldProperties(unittest.TestCase):
             pass
 
         class IA(interface.Interface):
-            a = TextLine(title="a")
+            a = TextLine(title=u"a")
 
         class IB(IA):
             b = Object(IBaz)
@@ -111,7 +109,7 @@ class TestUnicodeFieldProperty(unittest.TestCase):
 
     def test_set_bytes(self):
         class IA(interface.Interface):
-            a = TextLine(title="a")
+            a = TextLine(title=u"a")
 
         class A(object):
             a = UnicodeConvertingFieldProperty(IA['a'])
