@@ -78,7 +78,6 @@ class TestSchemaConfigured(unittest.TestCase):
         assert_that(a, has_property('field', 1))
 
     def test_readonly(self):
-        # https://github.com/NextThought/nti.schema/issues/11
         from nti.schema.fieldproperty import createDirectFieldProperties
         class IA(interface.Interface):
             field = Number(readonly=True,
@@ -91,6 +90,23 @@ class TestSchemaConfigured(unittest.TestCase):
 
         a = A()
         assert_that(a, has_property('field', 1))
+
+    def test_property_raises_exception(self):
+        # https://github.com/NextThought/nti.schema/issues/11
+        class IA(interface.Interface):
+            field = Number(readonly=True,
+                           required=False,
+                           default=1)
+
+        @interface.implementer(IA)
+        class A(SchemaConfigured):
+            @property
+            def field(self):
+                raise ValueError("bad field")
+
+        # We can still create it without raising an AttributeError;
+        # in fact, the ValueError is propagated
+        assert_that(calling(A), raises(ValueError, "bad field"))
 
 
 class TestConfigured(unittest.TestCase):

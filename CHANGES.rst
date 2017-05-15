@@ -12,6 +12,10 @@
 
 - Add support for Python 3.6.
 
+- The ``SchemaConfigured`` constructor doesn't hide errors when
+  checking for properties on Python 2. See `issue 11
+  <https://github.com/NextThought/nti.schema/issues/11>`_.
+
 
 1.1.3 (2017-01-17)
 ==================
