@@ -2,7 +2,7 @@
 from setuptools import setup, find_packages
 import codecs
 
-version = '1.1.4.dev0'
+version = '1.2.0'
 
 entry_points = {
 }

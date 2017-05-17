@@ -5,7 +5,7 @@
 =========
 
 
-1.2.0 (unreleased)
+1.2.0 (2017-05-17)
 ==================
 
 - Remove use of ``unicode_literals``.
