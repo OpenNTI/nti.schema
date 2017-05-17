@@ -10,7 +10,7 @@ to be imported from this module.
 .. TODO: This module is big enough it should be factored into a package and sub-modules.
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
+from __future__ import print_function,  absolute_import, division
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
@@ -135,18 +135,18 @@ class FieldValidationMixin(object):
     def _reraise_validation_error(self, e, value, _raise=False):
         if len(e.args) == 1:  # typically the message is the only thing
             self._fixup_validation_error_args(e, value)
-        elif len(e.args) == 0:  # Typically a SchemaNotProvided. Grr.
+        elif not e.args:  # Typically a SchemaNotProvided. Grr.
             self._fixup_validation_error_no_args(e, value)
         elif isinstance(e, sch_interfaces.TooShort) and len(e.args) == 2:
             # Note we're capitalizing the field in the message.
-            e.i18n_message = _('${field} is too short. Please use at least ${minLength} characters.',
+            e.i18n_message = _(u'${field} is too short. Please use at least ${minLength} characters.',
                                 mapping={'field': self.__fixup_name__.capitalize(),
                                         'minLength': e.args[1]})
             e.args = (self.__fixup_name__.capitalize() + ' is too short.',
                        self.__fixup_name__,
                        value)
         elif isinstance(e, sch_interfaces.TooLong) and len(e.args) == 2:
-            e.i18n_message = _('${field} is too long. ${max_size} character limit.',
+            e.i18n_message = _(u'${field} is too long. ${max_size} character limit.',
                                 mapping={'field': self.__fixup_name__.capitalize(),
                                         'max_size': e.args[1]})
             e.args = (self.__fixup_name__.capitalize() + ' is too long.',
@@ -470,11 +470,11 @@ class HTTPURL(ValidURI):
         orig_value = value
         if value:
             lower = value.lower()
-            if not lower.startswith('http://') and not lower.startswith('https://'):
+            if not lower.startswith(u'http://') and not lower.startswith(u'https://'):
                 # assume http
-                value = 'http://' + value
+                value = u'http://' + value
         result = super(HTTPURL, self).fromUnicode(value)
-        if result.count(':') != 1:
+        if result.count(u':') != 1:
             self._reraise_validation_error(sch_interfaces.InvalidURI(orig_value), orig_value, _raise=True)
 
         return result

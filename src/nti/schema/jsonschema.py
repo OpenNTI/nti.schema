@@ -8,7 +8,7 @@ For producing a JSON schema appropriate for use by clients, based on a Zope sche
 .. $Id$
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
+from __future__ import print_function, absolute_import, division
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
@@ -114,9 +114,11 @@ def get_data_from_choice_field(v, base_type=None):
                     # like nti.externalization, but without the dependency
                     choice = term.toExternalObject()
                 except AttributeError: # pragma: no cover
-                    choice = {'token': term.token,
-                              'value': term.value,
-                              'title': term.title}
+                    choice = {
+                        'token': term.token,
+                        'value': term.value,
+                        'title': term.title
+                    }
 
                 choices.append(choice)
             else: # pragma: no cover
@@ -208,11 +210,13 @@ class JsonSchemafier(object):
                 readonly = v.queryTaggedValue(TAG_READONLY_IN_UI) or readonly
 
             ui_base_type = None
-            item_schema = {'name': k,
-                           'required': required,
-                           'readonly': readonly,
-                           'min_length': getattr(v, 'min_length', None),
-                           'max_length': getattr(v, 'max_length', None) }
+            item_schema = {
+                'name': k,
+                'required': required,
+                'readonly': readonly,
+                'min_length': getattr(v, 'min_length', None),
+                'max_length': getattr(v, 'max_length', None)
+            }
             ui_type = v.queryTaggedValue(TAG_UI_TYPE)
             if not ui_type:
                 ui_type, ui_base_type = self.get_ui_types_from_field(v)

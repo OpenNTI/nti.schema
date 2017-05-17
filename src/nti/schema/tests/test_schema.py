@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from __future__ import print_function, unicode_literals, absolute_import, division
+from __future__ import print_function, absolute_import, division
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
@@ -22,18 +22,21 @@ does_not = is_not
 import unittest
 
 from zope import interface
+from zope.component import eventtesting
+
+from . import SchemaLayer
 from . import IUnicode
 
-from nti.schema.field import Number
-from nti.schema.field import Object
-
-
-from nti.schema.field import DictFromObject
-from nti.schema.field import ValidTextLine as TextLine
+from ..field import Number
+from ..field import Object
+from ..field import DictFromObject
+from ..field import ValidTextLine as TextLine
 
 from ..schema import PermissiveSchemaConfigured
+from ..schema import SchemaConfigured
 
-from nti.schema.interfaces import IBeforeDictAssignedEvent
+
+from ..interfaces import IBeforeDictAssignedEvent
 
 
 class TestMisc(unittest.TestCase):
@@ -74,9 +77,37 @@ class TestSchemaConfigured(unittest.TestCase):
         a = A(field=1)
         assert_that(a, has_property('field', 1))
 
+    def test_readonly(self):
+        from nti.schema.fieldproperty import createDirectFieldProperties
+        class IA(interface.Interface):
+            field = Number(readonly=True,
+                           required=False,
+                           default=1)
 
-from . import SchemaLayer
-from zope.component import eventtesting
+        @interface.implementer(IA)
+        class A(SchemaConfigured):
+            createDirectFieldProperties(IA)
+
+        a = A()
+        assert_that(a, has_property('field', 1))
+
+    def test_property_raises_exception(self):
+        # https://github.com/NextThought/nti.schema/issues/11
+        class IA(interface.Interface):
+            field = Number(readonly=True,
+                           required=False,
+                           default=1)
+
+        @interface.implementer(IA)
+        class A(SchemaConfigured):
+            @property
+            def field(self):
+                raise ValueError("bad field")
+
+        # We can still create it without raising an AttributeError;
+        # in fact, the ValueError is propagated
+        assert_that(calling(A), raises(ValueError, "bad field"))
+
 
 class TestConfigured(unittest.TestCase):
 
@@ -92,9 +123,9 @@ class TestConfigured(unittest.TestCase):
             pass
 
         x = X()
-        dict_field.set(x, dict_field.fromObject({'k': '1'}))
+        dict_field.set(x, dict_field.fromObject({u'k': u'1'}))
 
-        assert_that(x, has_property('dict', {'k': 1.0}))
+        assert_that(x, has_property('dict', {u'k': 1.0}))
 
         events = eventtesting.getEvents(IBeforeDictAssignedEvent)
         assert_that(events, has_length(1))

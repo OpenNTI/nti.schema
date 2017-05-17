@@ -6,7 +6,7 @@ Helpers for writing code that implements schemas.
 This module contains code based on code originally from dm.zope.schema.
 """
 
-from __future__ import print_function, absolute_import, division
+from __future__ import absolute_import, print_function, division
 __docformat__ = "restructuredtext en"
 
 from zope import interface
@@ -57,8 +57,14 @@ def schemadict(spec):
 
 if hasattr(dict, 'iteritems'):
     _iteritems = dict.iteritems
+    _marker = object()
+    # The point of this is to avoid hiding exceptions (which the builtin
+    # hasattr() does on Python 2)
+    def _hasattr(o, name):
+        return getattr(o, name, _marker) is not _marker
 else:
     _iteritems = dict.items
+    _hasattr = hasattr
 
 
 @interface.implementer(ISchemaConfigured)
@@ -74,7 +80,7 @@ class SchemaConfigured(object):
             setattr(self, k, v)
         # provide default values for schema fields not set
         for f, fields in _iteritems(schema):
-          if not hasattr(self, f):
+          if not _hasattr(self, f):
               setattr(self, f, fields.default)
 
     # provide control over which interfaces define the data schema

@@ -14,7 +14,7 @@ schema-based development with zope.schema easier.
 For complete details and the changelog, see the `documentation <http://ntischema.readthedocs.io/>`_.
 
 Overview
---------
+========
 
 Some of the most useful features include:
 
