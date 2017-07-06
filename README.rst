@@ -8,8 +8,12 @@
 .. image:: https://coveralls.io/repos/github/NextThought/nti.schema/badge.svg
   :target: https://coveralls.io/github/NextThought/nti.schema
 
-nti.schema offers a set of classes and functions that make
-schema-based development with zope.schema easier.
+.. image:: http://readthedocs.org/projects/ntischema/badge/?version=latest
+  :target: http://ntischema.readthedocs.io/en/latest/?badge=latest
+  :alt: Documentation Status
+
+nti.schema includes utilities for working with schema-driven
+development using `zope.schema <http://docs.zope.org/zope.schema/>`_.
 
 For complete details and the changelog, see the `documentation <http://ntischema.readthedocs.io/>`_.
 
