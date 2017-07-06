@@ -2,7 +2,7 @@
 from setuptools import setup, find_packages
 import codecs
 
-version = '1.2.1.dev0'
+version = '1.3.0.dev0'
 
 entry_points = {
 }
@@ -45,6 +45,7 @@ setup(
     zip_safe=True,
     install_requires=[
         'Acquisition',
+        'nti.i18n',
         'six',
         'setuptools',
         'zope.event',
@@ -60,12 +61,6 @@ setup(
             'nti.testing',
             'zope.testrunner',
         ],
-        ':python_version == "2.7"': [
-            # Not ported to Py3 yet; Plus, version 3 adds hard dep on
-            # Products.CMFCore/Zope2 that we don't want.
-            'plone.i18n < 3.0',
-            'zope.browserresource',  # Used by plone.i18n implicitly
-        ]
     },
     namespace_packages=['nti'],
     entry_points=entry_points,
