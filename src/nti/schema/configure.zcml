@@ -5,13 +5,9 @@
 
     <include package="zope.component" file="meta.zcml" />
     <include package="zope.component" />
-
-    <configure zcml:condition="installed plone.i18n">
-        <!-- browser:resourceDirectory directive, used by plone.i18n -->
-        <include package="zope.browserresource" file="meta.zcml" />
-        <include package="plone.i18n" />
-    </configure>
     <include package="zope.vocabularyregistry" />
+
+    <include package="nti.i18n" />
 
     <!-- I18N -->
     <include package="zope.i18n" file="meta.zcml" />

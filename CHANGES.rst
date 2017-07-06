@@ -5,10 +5,13 @@
 =========
 
 
-1.2.1 (unreleased)
+1.3.0 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Drop the Python 2 dependency on ``plone.i18n`` in favor of the new
+  library ``nti.i18n``, which supports Python 3. If ``plone.i18n`` is
+  installed, it *should not* be configured (ZCML), but its utility
+  objects can be looked up by either interface.
 
 
 1.2.0 (2017-05-17)

@@ -25,23 +25,7 @@ from zope import interface
 from zope.schema.vocabulary import SimpleTerm as _SimpleTerm
 from zope.schema.vocabulary import SimpleVocabulary as _SimpleVocabulary
 
-try:
-    from plone.i18n.locales.interfaces import ICountryAvailability as _ICountryAvailability
-except ImportError:
-    # Not on Py3
-    class _ICountryAvailability(interface.Interface):
-        def getCountries():
-            ""
-
-
-@interface.implementer(_ICountryAvailability)
-class _CountryAvailabilityFallback(object):
-
-    def getCountries(self):
-        return {
-            u'us' : {u'name' : 'United States', u'flag' : u'/++resource++country-flags/us.gif'},
-        }
-
+from nti.i18n.locales.interfaces import ICountryAvailability
 
 
 class CountryTerm(_SimpleTerm):
@@ -82,7 +66,7 @@ class _CountryVocabulary(_SimpleVocabulary):
 
 def CountryVocabularyFactory(context):
     """
-    A vocabulary factory, if plone.i18n is available.
+    A vocabulary factory.
     """
-    countries = component.queryUtility(_ICountryAvailability) or _CountryAvailabilityFallback()
+    countries = component.getUtility(ICountryAvailability)
     return _CountryVocabulary([CountryTerm.fromItem(item) for item in countries.getCountries().items()])
