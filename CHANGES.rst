@@ -5,7 +5,7 @@
 =========
 
 
-1.3.0 (unreleased)
+1.3.0 (2017-07-06)
 ==================
 
 - Drop the Python 2 dependency on ``plone.i18n`` in favor of the new
