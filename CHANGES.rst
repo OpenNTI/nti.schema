@@ -1,5 +1,3 @@
-
-
 =========
  Changes
 =========
@@ -8,7 +6,8 @@
 1.3.1 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Fix an ``UnboundLocalError`` on Python 3 in the ``Variant`` field.
+  See `issue 14 <https://github.com/NextThought/nti.schema/issues/14>`_.
 
 
 1.3.0 (2017-07-06)

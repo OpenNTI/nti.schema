@@ -281,10 +281,13 @@ class Variant(FieldValidationMixin, schema.Field):
                 return
             except sch_interfaces.ValidationError as e:
                 if self._raise_when_provided and hasattr(field, 'schema') and field.schema.providedBy(value):
-                    raise
-        # We get here only by all of them throwing an exception.
-        # we re-raise the last thing thrown
-        self._reraise_validation_error(e, value)
+                    self._reraise_validation_error(e, value)
+                if field is self.fields[-1]:
+                    # The last chance raised an exception. Nothing worked,
+                    # so bail.
+                    self._reraise_validation_error(e, value)
+        # We can never get here
+        raise AssertionError("This code should never be reached.")
 
     def fromObject(self, obj):
         """
