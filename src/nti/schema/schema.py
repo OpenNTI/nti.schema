@@ -55,6 +55,8 @@ def schemadict(spec):
     """The schema part of interface specification *spec* as a ``dict``."""
     return dict(schemaitems(spec))
 
+_iteritems = dict.items
+_hasattr = hasattr
 if hasattr(dict, 'iteritems'):
     _iteritems = dict.iteritems
     _marker = object()
@@ -62,9 +64,6 @@ if hasattr(dict, 'iteritems'):
     # hasattr() does on Python 2)
     def _hasattr(o, name):
         return getattr(o, name, _marker) is not _marker
-else:
-    _iteritems = dict.items
-    _hasattr = hasattr
 
 
 @interface.implementer(ISchemaConfigured)

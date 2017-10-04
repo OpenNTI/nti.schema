@@ -192,10 +192,10 @@ class ValidDatetime(FieldValidationMixin, Datetime):
         if not self.schema.providedBy(value):  # pragma: no cover
             raise sch_interfaces.SchemaNotProvided
 
+_iteritems = dict.items
 if hasattr(dict, 'iteritems'):
     _iteritems = dict.iteritems
-else:
-    _iteritems = dict.items
+
 
 class Object(FieldValidationMixin, _ObjectBase):
     """
@@ -281,10 +281,13 @@ class Variant(FieldValidationMixin, schema.Field):
                 return
             except sch_interfaces.ValidationError as e:
                 if self._raise_when_provided and hasattr(field, 'schema') and field.schema.providedBy(value):
-                    raise
-        # We get here only by all of them throwing an exception.
-        # we re-raise the last thing thrown
-        self._reraise_validation_error(e, value)
+                    self._reraise_validation_error(e, value)
+                if field is self.fields[-1]:
+                    # The last chance raised an exception. Nothing worked,
+                    # so bail.
+                    self._reraise_validation_error(e, value)
+        # We can never get here
+        raise AssertionError("This code should never be reached.")
 
     def fromObject(self, obj):
         """
@@ -323,7 +326,7 @@ class Variant(FieldValidationMixin, schema.Field):
                 try:
                     field.validate(adapted)
                     return adapted
-                except sch_interfaces.SchemaNotProvided:
+                except sch_interfaces.SchemaNotProvided: # pragma: no cover
                     # Except in one case. Some schema provides adapt to something
                     # that they do not actually want (e.g., ISanitizedHTMLContent can adapt as IPlainText when empty)
                     # so ignore that and keep trying

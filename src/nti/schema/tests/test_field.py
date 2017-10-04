@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-
+Tests for field.py
 """
 
 from __future__ import print_function, absolute_import, division
@@ -12,9 +12,13 @@ logger = __import__('logging').getLogger(__name__)
 #disable: accessing protected members, too many methods
 #pylint: disable=W0212,R0904
 
+# XXX Fix these in a later commit
+# pylint:disable=wrong-import-position,wrong-import-order
+
 import unittest
 from hamcrest import assert_that
 from hamcrest import is_
+from hamcrest import is_not
 from hamcrest import calling
 from hamcrest import raises
 from hamcrest import has_property
@@ -24,9 +28,11 @@ from hamcrest import none
 
 # use old imports to test bwc
 from nti.schema.testing import validated_by
-from nti.schema.testing import not_validated_by
+# XXX: Not using: bug https://github.com/NextThought/nti.testing/issues/7
+# in <= 2.0.0
+#from nti.schema.testing import not_validated_by
 from nti.schema.testing import verifiably_provides
-
+from nti.testing.matchers import ValidatedBy as _ValidatedBy
 
 from . import SchemaLayer
 from zope.component import eventtesting
@@ -62,7 +68,26 @@ from zope.schema.interfaces import TooLong
 from zope.schema.interfaces import TooShort
 from zope.schema.interfaces import InvalidURI
 from zope.schema.interfaces import WrongType
+from zope.schema.interfaces import ValidationError
 from zope.interface.common import interfaces as cmn_interfaces
+
+class ValidatedBy(_ValidatedBy):
+    def _matches(self, data):
+        try:
+            self.field.validate(data)
+        except ValidationError:
+            return False
+        else:
+            return True
+
+def validated_by(field):
+    """ Matches if the data is validated by the given IField """
+    return ValidatedBy(field)
+
+
+def not_validated_by(field):
+    """ Matches if the data is NOT validated by the given IField. """
+    return is_not(validated_by(field))
 
 
 class TestObjectLen(unittest.TestCase):
@@ -101,12 +126,10 @@ class TestHTTPUrl(unittest.TestCase):
         assert_that(http.fromUnicode('https://www.yahoo.com'),
                      is_('https://www.yahoo.com'))
 
-        try:
+        with self.assertRaises(InvalidURI) as exc:
             http.fromUnicode('mailto:jason@nextthought.com')
-            self.fail("Must raise")
-        except InvalidURI as ex:
-            exception = ex
 
+        exception = exc.exception
         assert_that(exception, has_property('field', http))
         assert_that(exception, has_property('value', 'mailto:jason@nextthought.com'))
         assert_that(exception, has_property('message', 'The specified URL is not valid.'))
