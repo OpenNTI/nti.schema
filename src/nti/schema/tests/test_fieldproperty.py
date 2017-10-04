@@ -150,11 +150,8 @@ class TestAdaptingFieldProperty(unittest.TestCase):
             obj = O()
 
             # First, can't set it
-            try:
+            with self.assertRaises(SchemaNotProvided):
                 obj.ob = CantConform()
-                self.fail("Should raise NotProvided")
-            except SchemaNotProvided:
-                pass
 
             # But this can be adapted
             obj.ob = Conforms()

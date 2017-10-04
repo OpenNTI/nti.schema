@@ -126,12 +126,10 @@ class TestHTTPUrl(unittest.TestCase):
         assert_that(http.fromUnicode('https://www.yahoo.com'),
                      is_('https://www.yahoo.com'))
 
-        try:
+        with self.assertRaises(InvalidURI) as exc:
             http.fromUnicode('mailto:jason@nextthought.com')
-            self.fail("Must raise")
-        except InvalidURI as ex:
-            exception = ex
 
+        exception = exc.exception
         assert_that(exception, has_property('field', http))
         assert_that(exception, has_property('value', 'mailto:jason@nextthought.com'))
         assert_that(exception, has_property('message', 'The specified URL is not valid.'))

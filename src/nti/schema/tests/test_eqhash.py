@@ -34,8 +34,7 @@ class Thing2(object):
     b = 'b'
 
     def __init__(self, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
+        self.__dict__.update(kwargs)
 
 @EqHash('a', 'b', include_type=True)
 class NotThing(object):
@@ -202,7 +201,7 @@ class TestSuperHash(unittest.TestCase):
                     is_(-6213620179105025536))
 
 
-def bench_hash():
+def bench_hash(): # pragma: no cover
     import timeit
     import statistics
 
@@ -232,7 +231,7 @@ def bench_hash():
     print("Avg Super2  hash", statistics.mean(times), "stddev", statistics.stdev(times))
 
 
-def bench_eq():
+def bench_eq(): # pragma: no cover
     import timeit
     import statistics
 

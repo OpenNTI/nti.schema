@@ -9,6 +9,7 @@ logger = __import__('logging').getLogger(__name__)
 # disable: accessing protected members, too many methods
 # pylint: disable=W0212,R0904
 
+from six import text_type
 
 from nti.testing.layers import ZopeComponentLayer
 from nti.testing.layers import ConfiguringLayerMixin
@@ -40,7 +41,5 @@ from zope.interface import Interface, classImplements
 class IUnicode(Interface):
     "Unicode strings"
 
-try:
-    classImplements(unicode, IUnicode)
-except NameError:
-    classImplements(str, IUnicode)
+
+classImplements(text_type, IUnicode)

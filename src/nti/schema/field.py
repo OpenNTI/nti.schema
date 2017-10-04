@@ -192,10 +192,10 @@ class ValidDatetime(FieldValidationMixin, Datetime):
         if not self.schema.providedBy(value):  # pragma: no cover
             raise sch_interfaces.SchemaNotProvided
 
+_iteritems = dict.items
 if hasattr(dict, 'iteritems'):
     _iteritems = dict.iteritems
-else:
-    _iteritems = dict.items
+
 
 class Object(FieldValidationMixin, _ObjectBase):
     """
@@ -326,7 +326,7 @@ class Variant(FieldValidationMixin, schema.Field):
                 try:
                     field.validate(adapted)
                     return adapted
-                except sch_interfaces.SchemaNotProvided:
+                except sch_interfaces.SchemaNotProvided: # pragma: no cover
                     # Except in one case. Some schema provides adapt to something
                     # that they do not actually want (e.g., ISanitizedHTMLContent can adapt as IPlainText when empty)
                     # so ignore that and keep trying
