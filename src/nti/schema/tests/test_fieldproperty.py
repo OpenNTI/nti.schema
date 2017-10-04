@@ -11,7 +11,7 @@ logger = __import__('logging').getLogger(__name__)
 
 #disable: accessing protected members, too many methods
 #pylint: disable=W0212,R0904
-
+import doctest
 import unittest
 
 from Acquisition import Implicit
@@ -160,6 +160,11 @@ class TestAdaptingFieldProperty(unittest.TestCase):
             obj.ob = Conforms()
             assert_that(obj.ob, is_(Baz))
 
+def test_suite():
+    return unittest.TestSuite((
+        unittest.defaultTestLoader.loadTestsFromName(__name__),
+        doctest.DocTestSuite("nti.schema.fieldproperty"),
+    ))
 
 if __name__ == '__main__':
     unittest.main()

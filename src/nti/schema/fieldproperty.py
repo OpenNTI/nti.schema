@@ -106,17 +106,26 @@ def createDirectFieldProperties(__schema, omit=(), adapting=False):
     given schema; inherited fields from parent interfaces are assummed
     to be implemented in a base class of the current class::
 
-      class IA(interface.Interface):
-          a = TextLine(title="a")
+      >>> from zope import interface
+      >>> from nti.schema.field import TextLine, Object
+      >>> class IA(interface.Interface):
+      ...    a = TextLine(title=u"a")
 
-      class IB(IA):
-          b = Object(IBaz)
+      >>> class IB(IA):
+      ...    b = Object(interface.Interface)
 
-      class A(object):
-          createFieldProperties(IA)
+      >>> class A(object):
+      ...    createFieldProperties(IA)
 
-      class B(object):
-          createDirectFieldProperties(IB, adapting=True)
+      >>> class B(object):
+      ...    createDirectFieldProperties(IB, adapting=True)
+
+      >>> 'a' in A.__dict__
+      True
+      >>> 'a' in B.__dict__
+      False
+      >>> 'b' in B.__dict__
+      True
 
 
     :keyword adapting: If set to ``True`` (not the default), fields
@@ -137,7 +146,7 @@ def createDirectFieldProperties(__schema, omit=(), adapting=False):
     createFieldProperties(__schema, omit=__not_my_names)
 
     __frame = sys._getframe(1)
-    for k, v in locals().items():
+    for k, v in list(locals().items()):
         if k not in __before:
             if adapting and sch_interfaces.IObject.providedBy(__schema[k]):
                 v = AdaptingFieldProperty(__schema[k])
