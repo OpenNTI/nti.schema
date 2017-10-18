@@ -3,7 +3,7 @@
 =========
 
 
-1.3.1 (unreleased)
+1.3.1 (2017-10-18)
 ==================
 
 - Fix an ``UnboundLocalError`` on Python 3 in the ``Variant`` field.
