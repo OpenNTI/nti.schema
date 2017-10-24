@@ -1,6 +1,6 @@
-===============================
- :mod:`nti.schema.subscribers`
-===============================
+========================
+ nti.schema.subscribers
+========================
 
 .. automodule:: nti.schema.subscribers
     :members:

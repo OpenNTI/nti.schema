@@ -1,6 +1,6 @@
-=================================
- :mod:`nti.schema.fieldproperty`
-=================================
+==========================
+ nti.schema.fieldproperty
+==========================
 
 .. automodule:: nti.schema.fieldproperty
     :members:

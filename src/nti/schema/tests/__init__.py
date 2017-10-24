@@ -1,20 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
-
-logger = __import__('logging').getLogger(__name__)
-
-# disable: accessing protected members, too many methods
-# pylint: disable=W0212,R0904
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 from six import text_type
-
-from nti.testing.layers import ZopeComponentLayer
-from nti.testing.layers import ConfiguringLayerMixin
-
+from zope.interface import Interface
+from zope.interface import classImplements
 from zope.testing import cleanup
+
+from nti.testing.layers import ConfiguringLayerMixin
+from nti.testing.layers import ZopeComponentLayer
+
+__docformat__ = "restructuredtext en"
+
+# disable: accessing protected members, too many methods
+# pylint: disable=W0212,R0904,inherit-non-class
 
 class SchemaLayer(ZopeComponentLayer,
                   ConfiguringLayerMixin):
@@ -31,12 +34,11 @@ class SchemaLayer(ZopeComponentLayer,
         cleanup.cleanUp()
 
     @classmethod
-    def testSetUp(cls, test=None):
+    def testSetUp(cls):
         pass
 
     testTearDown = testSetUp
 
-from zope.interface import Interface, classImplements
 
 class IUnicode(Interface):
     "Unicode strings"

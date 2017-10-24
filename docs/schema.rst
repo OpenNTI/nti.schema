@@ -1,6 +1,6 @@
-==========================
- :mod:`nti.schema.schema`
-==========================
+===================
+ nti.schema.schema
+===================
 
 .. automodule:: nti.schema.schema
     :members:

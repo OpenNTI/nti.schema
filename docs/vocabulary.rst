@@ -1,6 +1,6 @@
-==============================
- :mod:`nti.schema.vocabulary`
-==============================
+=======================
+ nti.schema.vocabulary
+=======================
 
 .. automodule:: nti.schema.vocabulary
     :members:

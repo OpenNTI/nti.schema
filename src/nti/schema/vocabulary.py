@@ -6,26 +6,25 @@ Vocabularies and factories for use in schema fields.
 When this package is configured (via ``configure.zcml``) there will be a schema
 vocabulary named ``Countries`` available::
 
-  from nti.schema.field import Choice
-  from zope import interface
+  >>> from nti.schema.field import Choice
+  >>> from zope import interface
 
-  class IA(interface.Interface):
-    choice = Choice(title="Choice",
-                     vocabulary="Countries")
+  >>> class IA(interface.Interface):
+  ...      choice = Choice(title=u"Choice",
+  ...                      vocabulary="Countries")
 """
 
-from __future__ import print_function, absolute_import, division
-__docformat__ = "restructuredtext en"
-
-logger = __import__('logging').getLogger(__name__)
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 from zope import component
-from zope import interface
-
 from zope.schema.vocabulary import SimpleTerm as _SimpleTerm
 from zope.schema.vocabulary import SimpleVocabulary as _SimpleVocabulary
 
 from nti.i18n.locales.interfaces import ICountryAvailability
+
+__docformat__ = "restructuredtext en"
 
 
 class CountryTerm(_SimpleTerm):
@@ -58,7 +57,7 @@ class CountryTerm(_SimpleTerm):
 
 class _CountryVocabulary(_SimpleVocabulary):
     """
-    __contains__ is based on the token, not the value.
+    ``__contains__`` is based on the token, not the value.
     """
 
     def __contains__(self, token):
@@ -69,4 +68,6 @@ def CountryVocabularyFactory(context):
     A vocabulary factory.
     """
     countries = component.getUtility(ICountryAvailability)
-    return _CountryVocabulary([CountryTerm.fromItem(item) for item in countries.getCountries().items()])
+    return _CountryVocabulary([CountryTerm.fromItem(item)
+                               for item
+                               in countries.getCountries().items()])
