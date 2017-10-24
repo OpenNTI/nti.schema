@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-from setuptools import setup, find_packages
 import codecs
+from setuptools import setup, find_packages
 
 version = '1.3.2.dev0'
 
@@ -19,7 +19,11 @@ setup(
     author='Jason Madden',
     author_email='open-source@nextthought.com',
     description=('Zope schema related support'),
-    long_description=_read('README.rst'),
+    long_description=(
+        _read('README.rst')
+        + '\n\n'
+        + _read('CHANGES.rst')
+    ),
     license='Apache',
     keywords='zope schema',
     url='https://github.com/NextThought/nti.schema',
@@ -52,13 +56,18 @@ setup(
         'zope.i18n',
         'zope.i18nmessageid',
         'zope.vocabularyregistry',
-        'zope.deferredimport',
+        'zope.deferredimport >= 4.2.1',
     ],
     extras_require={
         'test': [
             'pyhamcrest',
             'nti.testing',
             'zope.testrunner',
+        ],
+        'docs': [
+            'Sphinx',
+            'repoze.sphinx.autointerface',
+            'sphinx_rtd_theme',
         ],
     },
     namespace_packages=['nti'],

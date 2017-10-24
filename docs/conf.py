@@ -44,7 +44,6 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.extlinks',
     'sphinx.ext.viewcode',
-    'sphinxcontrib.programoutput',
     'repoze.sphinx.autointerface',
 ]
 
@@ -355,6 +354,8 @@ intersphinx_mapping = {
     'https://docs.python.org/': None,
     'http://www.zodb.org/en/latest/': None,
     'http://zopeschema.readthedocs.io/en/latest/': None,
+    'http://zopecomponent.readthedocs.io/en/latest/': None,
+    'http://ntitesting.readthedocs.io/en/latest/': None,
 }
 
 extlinks = {'issue': ('https://github.com/NextThought/nti.schema/issues/%s',

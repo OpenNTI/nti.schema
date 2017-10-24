@@ -4,43 +4,27 @@
 Tests for field.py
 """
 
-from __future__ import print_function, absolute_import, division
-__docformat__ = "restructuredtext en"
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-logger = __import__('logging').getLogger(__name__)
-
-#disable: accessing protected members, too many methods
-#pylint: disable=W0212,R0904
-
-# XXX Fix these in a later commit
-# pylint:disable=wrong-import-position,wrong-import-order
-
+# stdlib imports
 import unittest
-from hamcrest import assert_that
-from hamcrest import is_
-from hamcrest import is_not
-from hamcrest import calling
-from hamcrest import raises
-from hamcrest import has_property
-from hamcrest import contains
-from hamcrest import has_length
-from hamcrest import none
 
-# use old imports to test bwc
-from nti.schema.testing import validated_by
-# XXX: Not using: bug https://github.com/NextThought/nti.testing/issues/7
-# in <= 2.0.0
-#from nti.schema.testing import not_validated_by
-from nti.schema.testing import verifiably_provides
-from nti.testing.matchers import ValidatedBy as _ValidatedBy
-
-from . import SchemaLayer
 from zope.component import eventtesting
+from zope.interface.common import interfaces as cmn_interfaces
+from zope.schema import Dict
+from zope.schema.interfaces import InvalidURI
+from zope.schema.interfaces import SchemaNotProvided
+from zope.schema.interfaces import TooLong
+from zope.schema.interfaces import TooShort
+from zope.schema.interfaces import WrongType
 
+
+from nti.schema.field import HTTPURL
 from nti.schema.field import DecodingValidTextLine
 from nti.schema.field import FieldValidationMixin
 from nti.schema.field import Float
-from nti.schema.field import HTTPURL
 from nti.schema.field import IndexedIterable
 from nti.schema.field import Int
 from nti.schema.field import ListOrTuple
@@ -52,42 +36,35 @@ from nti.schema.field import TupleFromObject
 from nti.schema.field import UniqueIterable
 from nti.schema.field import ValidDatetime
 from nti.schema.field import ValidRegularExpression
-from nti.schema.field import ValidTextLine as TextLine
 from nti.schema.field import Variant
-
-from zope.schema import Dict
-
-from nti.schema.interfaces import IVariant
+from nti.schema.field import ValidTextLine as TextLine
 from nti.schema.interfaces import IBeforeDictAssignedEvent
 from nti.schema.interfaces import IBeforeSequenceAssignedEvent
+from nti.schema.interfaces import IVariant
+# Import from the BWC location
+from nti.schema.testing import validated_by # pylint:disable=no-name-in-module
+from nti.schema.testing import verifiably_provides # pylint:disable=no-name-in-module
+from nti.schema.testing import not_validated_by # pylint:disable=no-name-in-module
+
 
 from . import IUnicode
+from . import SchemaLayer
 
-from zope.schema.interfaces import SchemaNotProvided
-from zope.schema.interfaces import TooLong
-from zope.schema.interfaces import TooShort
-from zope.schema.interfaces import InvalidURI
-from zope.schema.interfaces import WrongType
-from zope.schema.interfaces import ValidationError
-from zope.interface.common import interfaces as cmn_interfaces
+from hamcrest import assert_that
+from hamcrest import calling
+from hamcrest import contains
+from hamcrest import has_length
+from hamcrest import has_property
+from hamcrest import is_
+from hamcrest import none
+from hamcrest import raises
 
-class ValidatedBy(_ValidatedBy):
-    def _matches(self, data):
-        try:
-            self.field.validate(data)
-        except ValidationError:
-            return False
-        else:
-            return True
+__docformat__ = "restructuredtext en"
 
-def validated_by(field):
-    """ Matches if the data is validated by the given IField """
-    return ValidatedBy(field)
+logger = __import__('logging').getLogger(__name__)
 
-
-def not_validated_by(field):
-    """ Matches if the data is NOT validated by the given IField. """
-    return is_not(validated_by(field))
+#disable: accessing protected members, too many methods
+#pylint: disable=W0212,R0904,blacklisted-name
 
 
 class TestObjectLen(unittest.TestCase):
@@ -103,16 +80,16 @@ class TestObjectLen(unittest.TestCase):
         olen.validate(u'')
 
         assert_that(calling(olen.validate).with_args(object()),
-                     raises(SchemaNotProvided))
+                    raises(SchemaNotProvided))
 
         assert_that(calling(olen.validate).with_args(u'abcdef'),
-                     raises(TooLong))
+                    raises(TooLong))
 
     def test_objectlen_short(self):
         olen = ObjectLen(IUnicode, min_length=5)
 
         assert_that(calling(olen.validate).with_args(u'abc'),
-                     raises(TooShort))
+                    raises(TooShort))
 
 class TestHTTPUrl(unittest.TestCase):
 
@@ -121,10 +98,10 @@ class TestHTTPUrl(unittest.TestCase):
         http = HTTPURL(__name__='foo')
 
         assert_that(http.fromUnicode('www.google.com'),
-                     is_('http://www.google.com'))
+                    is_('http://www.google.com'))
 
         assert_that(http.fromUnicode('https://www.yahoo.com'),
-                     is_('https://www.yahoo.com'))
+                    is_('https://www.yahoo.com'))
 
         with self.assertRaises(InvalidURI) as exc:
             http.fromUnicode('mailto:jason@nextthought.com')
@@ -154,7 +131,7 @@ class TestVariant(unittest.TestCase):
         assert_that(syntax_or_lookup.fromObject(u'foo'), is_(u'foo'))
 
         assert_that(calling(syntax_or_lookup.fromObject).with_args(object()),
-                     raises(TypeError))
+                    raises(TypeError))
 
         # cover
         syntax_or_lookup.getDoc()

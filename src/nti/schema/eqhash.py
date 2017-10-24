@@ -3,15 +3,17 @@
 """
 Helpers for hashing and equality based on a list of names.
 
-.. $Id$
 """
 
-from __future__ import print_function,  absolute_import, division
-__docformat__ = "restructuredtext en"
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import operator
 
 import six
+
+__docformat__ = "restructuredtext en"
 
 def _superhash_force(value):
     # Called when we know that we can't hash the value.
@@ -60,14 +62,18 @@ def EqHash(*names,
 
     Additional parameters are only available via keywords::
 
-      @EqHash('a', 'b')
-      class Thing(object):
-         a = 'a'
-         b = 'b'
+      >>> @EqHash('a', 'b')
+      ... class Thing(object):
+      ...   a = 1
+      ...   b = 2
+      >>> hash(Thing()) == (hash(('a', 'b')) ^ hash((1, 2)))
+      True
 
-      @EqHash('c', include_super=True)
-      class ChildThing(Thing):
-         c = 'c'
+      >>> @EqHash('c', include_super=True)
+      ... class ChildThing(Thing):
+      ...   c = 3
+      >>> hash(ChildThing()) != hash(Thing()) != 0
+      True
 
     :keyword include_super: If set to ``True`` (*not* the default)
         then the equality (and perhaps hash) values of super will be considered.
@@ -193,8 +199,8 @@ def _eq_hash(cls, names, include_super, include_type, superhash): # pylint:disab
             # and if so we'll try that.
             try:
                 return hash(tuple([transformer(value) if transformer is not None else value
-                                  for transformer, value
-                                  in zip(transformers, values)]))
+                                   for transformer, value
+                                   in zip(transformers, values)]))
             except TypeError:
                 # Snap. Something changed.
                 for i, value in enumerate(values):
@@ -220,8 +226,8 @@ def _eq_hash(cls, names, include_super, include_type, superhash): # pylint:disab
 
             # Ok, good to go. Let's try it.
             return hash(tuple([transformer(value) if transformer is not None else value
-                              for transformer, value
-                              in zip(transformers, values)]))
+                               for transformer, value
+                               in zip(transformers, values)]))
     else:
         # No need to try to wrap in a tuple or anything, we can
         # just directly call the hash builtin. We'll get passed either
@@ -249,7 +255,7 @@ def _eq_hash(cls, names, include_super, include_type, superhash): # pylint:disab
         # If we or-equal for every attribute separately, we
         # easily run the risk of saturating the integer. So we callect
         # all attributes down to one tuple to hash
-        h ^= _hash( attrgetter(self) )
+        h ^= _hash(attrgetter(self))
         return h
 
     return __eq__, __hash__, __ne__

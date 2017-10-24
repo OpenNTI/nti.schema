@@ -1,7 +1,3 @@
-============
- nti.schema
-============
-
 .. include:: ../README.rst
 
 .. toctree::
@@ -14,6 +10,7 @@
    subscribers
    vocabulary
    eqhash
+   testing
    changelog
 
 ====================

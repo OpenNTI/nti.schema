@@ -1,7 +1,7 @@
 ==========================
- :mod:`nti.schema.schema`
+ nti.schema.fieldproperty
 ==========================
 
-.. automodule:: nti.schema.schema
+.. automodule:: nti.schema.fieldproperty
     :members:
     :undoc-members:

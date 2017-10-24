@@ -2,15 +2,23 @@
  nti.schema
 ============
 
+.. image:: https://img.shields.io/pypi/v/nti.schema.svg
+        :target: https://pypi.python.org/pypi/nti.schema/
+        :alt: Latest release
+
+.. image:: https://img.shields.io/pypi/pyversions/nti.schema.svg
+        :target: https://pypi.org/project/nti.schema/
+        :alt: Supported Python versions
+
 .. image:: https://travis-ci.org/NextThought/nti.schema.svg?branch=master
-  :target: https://travis-ci.org/NextThought/nti.schema
+        :target: https://travis-ci.org/NextThought/nti.schema
 
 .. image:: https://coveralls.io/repos/github/NextThought/nti.schema/badge.svg
-  :target: https://coveralls.io/github/NextThought/nti.schema
+        :target: https://coveralls.io/github/NextThought/nti.schema
 
 .. image:: http://readthedocs.org/projects/ntischema/badge/?version=latest
-  :target: http://ntischema.readthedocs.io/en/latest/?badge=latest
-  :alt: Documentation Status
+        :target: http://ntischema.readthedocs.io/en/latest/?badge=latest
+        :alt: Documentation Status
 
 nti.schema includes utilities for working with schema-driven
 development using `zope.schema <http://docs.zope.org/zope.schema/>`_.

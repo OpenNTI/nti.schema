@@ -5,12 +5,15 @@ include LICENSE
 include babel.cfg
 include nose2.cfg
 include tox.ini
+include .travis.yml
+include .coveragerc
+
 recursive-include src *.po
 recursive-include src *.pot
 recursive-include src *.zcml
 include *.txt
-include .coveragerc
-recursive-include doc *.py
-recursive-include doc *.rst
-recursive-include doc Makefile
-recursive-exclude doc changelog.rst
+
+recursive-include docs *.py
+recursive-include docs *.rst
+recursive-include docs Makefile
+recursive-exclude docs changelog.rst

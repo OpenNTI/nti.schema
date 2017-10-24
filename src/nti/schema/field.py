@@ -10,77 +10,81 @@ to be imported from this module.
 .. TODO: This module is big enough it should be factored into a package and sub-modules.
 """
 
-from __future__ import print_function,  absolute_import, division
-__docformat__ = "restructuredtext en"
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-logger = __import__('logging').getLogger(__name__)
-
-from nti.schema import MessageFactory as _
-
+# stdlib imports
+import collections
+import numbers
 import re
-from six import string_types
-from six import reraise
 import sys
 
-from zope.schema import Object as _ObjectBase
-
-from .schema import SchemaConfigured
-SchemaConfigured = SchemaConfigured
-
+from six import reraise
+from six import string_types
+from zope import interface
+from zope import schema
+from zope.event import notify
 import zope.interface.common.idatetime
 
-from zope import schema
-from zope import interface
+from zope.schema import Bool
+from zope.schema import Choice
+from zope.schema import Date
+from zope.schema import Datetime
+from zope.schema import Decimal
+from zope.schema import Dict
+from zope.schema import FrozenSet
+from zope.schema import Iterable
+from zope.schema import List
+from zope.schema import Set
+from zope.schema import Text
+from zope.schema import TextLine
+from zope.schema import Timedelta
+from zope.schema import Tuple
+from zope.schema import Object as _ObjectBase
 
-from zope.event import notify
 from zope.schema import interfaces as sch_interfaces
+
+from nti.schema import MessageFactory as _
+from nti.schema.interfaces import BeforeDictAssignedEvent
+from nti.schema.interfaces import BeforeObjectAssignedEvent
+from nti.schema.interfaces import BeforeSchemaFieldAssignedEvent
+from nti.schema.interfaces import BeforeSequenceAssignedEvent
+from nti.schema.interfaces import BeforeSetAssignedEvent
+from nti.schema.interfaces import BeforeTextAssignedEvent
+from nti.schema.interfaces import BeforeTextLineAssignedEvent
+from nti.schema.interfaces import IFromObject
+from nti.schema.interfaces import IListOrTuple
+from nti.schema.interfaces import InvalidValue
+from nti.schema.interfaces import IVariant
+
+from .schema import SchemaConfigured
+
+__docformat__ = "restructuredtext en"
 
 # Re-export some things as part of our public API so we can
 # later re-implement them locally if needed
-from zope.schema import Bool
+
+SchemaConfigured = SchemaConfigured
 Bool = Bool
-from zope.schema import Date
 Date = Date
-from zope.schema import Datetime
 Datetime = Datetime
 DateTime = Datetime
-from zope.schema import Decimal
 Decimal = Decimal
-from zope.schema import Dict
 Dict = Dict
-from zope.schema import List
 List = List
-from zope.schema import Text
 Text = Text
-from zope.schema import TextLine
 TextLine = TextLine
-from zope.schema import Timedelta
 Timedelta = Timedelta
-from zope.schema import Choice
 Choice = Choice
-from zope.schema import Tuple
 Tuple = Tuple
-from zope.schema import FrozenSet
 FrozenSet = FrozenSet
-from zope.schema import Set
 Set = Set
-from zope.schema import Iterable
 Iterable = Iterable
 
-from nti.schema.interfaces import IVariant
-from nti.schema.interfaces import IFromObject
-from nti.schema.interfaces import IListOrTuple
-
-import numbers
-import collections
-
-from nti.schema.interfaces import BeforeSetAssignedEvent
-from nti.schema.interfaces import BeforeDictAssignedEvent
-from nti.schema.interfaces import BeforeTextAssignedEvent
-from nti.schema.interfaces import BeforeObjectAssignedEvent
-from nti.schema.interfaces import BeforeTextLineAssignedEvent
-from nti.schema.interfaces import BeforeSequenceAssignedEvent
-from nti.schema.interfaces import BeforeSchemaFieldAssignedEvent
+# The bind() method in the superclass takes an argument of "object", but
+# that redefines a builtin
+# pylint:disable=arguments-differ
 
 def _do_set(self, context, value, cls, factory):
     try:
@@ -90,11 +94,11 @@ def _do_set(self, context, value, cls, factory):
         super(cls, self).set(context, value)
     except sch_interfaces.ValidationError as e: # pragma: no cover
         # This shouldn't happen, set() doesn't typically validate.
-        self._reraise_validation_error(e, value)
+        self._reraise_validation_error(e, value) # pylint:disable=protected-access
 
 def __make_set(cls, eventfactory):
 
-    def set(self, context, value):
+    def set(self, context, value): # pylint:disable=redefined-builtin
         return _do_set(self, context, value, cls, eventfactory)
 
     cls.set = set
@@ -105,7 +109,6 @@ def __with_set(eventfactory=BeforeSchemaFieldAssignedEvent):
         return cls
     return X
 
-from nti.schema.interfaces import InvalidValue
 InvalidValue = InvalidValue
 
 class FieldValidationMixin(object):
@@ -133,31 +136,33 @@ class FieldValidationMixin(object):
         e.args = (value, str(e), self.__fixup_name__)
 
     def _reraise_validation_error(self, e, value, _raise=False):
+        # This must be called inside a try/except with an active exception.
         if len(e.args) == 1:  # typically the message is the only thing
             self._fixup_validation_error_args(e, value)
         elif not e.args:  # Typically a SchemaNotProvided. Grr.
             self._fixup_validation_error_no_args(e, value)
         elif isinstance(e, sch_interfaces.TooShort) and len(e.args) == 2:
             # Note we're capitalizing the field in the message.
-            e.i18n_message = _(u'${field} is too short. Please use at least ${minLength} characters.',
-                                mapping={'field': self.__fixup_name__.capitalize(),
-                                        'minLength': e.args[1]})
+            e.i18n_message = _(
+                u'${field} is too short. Please use at least ${minLength} characters.',
+                mapping={'field': self.__fixup_name__.capitalize(),
+                         'minLength': e.args[1]})
             e.args = (self.__fixup_name__.capitalize() + ' is too short.',
-                       self.__fixup_name__,
-                       value)
+                      self.__fixup_name__,
+                      value)
         elif isinstance(e, sch_interfaces.TooLong) and len(e.args) == 2:
             e.i18n_message = _(u'${field} is too long. ${max_size} character limit.',
-                                mapping={'field': self.__fixup_name__.capitalize(),
+                               mapping={'field': self.__fixup_name__.capitalize(),
                                         'max_size': e.args[1]})
             e.args = (self.__fixup_name__.capitalize() + ' is too long.',
-                       self.__fixup_name__,
-                       value)
+                      self.__fixup_name__,
+                      value)
         e.field = self
         if not getattr(e, 'value', None):
             e.value = value
         if _raise:
             raise e
-        raise
+        raise # pylint:disable=misplaced-bare-raise
 
     def _validate(self, value):
         try:
@@ -186,16 +191,15 @@ class ValidDatetime(FieldValidationMixin, Datetime):
         try:
             super(ValidDatetime, self)._validate(value)
         except sch_interfaces.WrongType as e:
-            raise sch_interfaces.SchemaNotProvided(value, e.__doc__, self.__fixup_name__, self.schema, list(interface.providedBy(value)))
+            raise sch_interfaces.SchemaNotProvided(value, e.__doc__,
+                                                   self.__fixup_name__, self.schema,
+                                                   list(interface.providedBy(value)))
 
         # schema has to be provided by value
         if not self.schema.providedBy(value):  # pragma: no cover
             raise sch_interfaces.SchemaNotProvided
 
-_iteritems = dict.items
-if hasattr(dict, 'iteritems'):
-    _iteritems = dict.iteritems
-
+_iteritems = getattr(dict, 'iteritems', dict.items)
 
 class Object(FieldValidationMixin, _ObjectBase):
     """
@@ -209,7 +213,8 @@ class Object(FieldValidationMixin, _ObjectBase):
     # called (the error would already have been raised.)
 
     def _fixup_validation_error_no_args(self, e, value):
-        e.args = (value, e.__doc__, self.__fixup_name__, self.schema, list(interface.providedBy(value)))
+        e.args = (value, e.__doc__, self.__fixup_name__, self.schema,
+                  list(interface.providedBy(value)))
 
 @interface.implementer(IVariant)
 class Variant(FieldValidationMixin, schema.Field):
@@ -266,6 +271,8 @@ class Variant(FieldValidationMixin, schema.Field):
         return doc
 
     def bind(self, obj):
+        # The fields member really does exist
+        # pylint:disable=no-member
         clone = super(Variant, self).bind(obj)
         clone.fields = [x.bind(obj) for x in clone.fields]
         for f in clone.fields:
@@ -280,7 +287,9 @@ class Variant(FieldValidationMixin, schema.Field):
                 # one of them accepted, yay!
                 return
             except sch_interfaces.ValidationError as e:
-                if self._raise_when_provided and hasattr(field, 'schema') and field.schema.providedBy(value):
+                if (self._raise_when_provided
+                        and hasattr(field, 'schema')
+                        and field.schema.providedBy(value)):
                     self._reraise_validation_error(e, value)
                 if field is self.fields[-1]:
                     # The last chance raised an exception. Nothing worked,
@@ -309,7 +318,8 @@ class Variant(FieldValidationMixin, schema.Field):
                 # Most common to least common
                 if sch_interfaces.IObject.providedBy(field):
                     converter = field.schema
-                elif sch_interfaces.IFromUnicode.providedBy(field) and isinstance(obj, string_types):
+                elif (sch_interfaces.IFromUnicode.providedBy(field)
+                      and isinstance(obj, string_types)):
                     converter = field.fromUnicode
                 elif IFromObject.providedBy(field):
                     converter = field.fromObject
@@ -328,7 +338,9 @@ class Variant(FieldValidationMixin, schema.Field):
                     return adapted
                 except sch_interfaces.SchemaNotProvided: # pragma: no cover
                     # Except in one case. Some schema provides adapt to something
-                    # that they do not actually want (e.g., ISanitizedHTMLContent can adapt as IPlainText when empty)
+                    # that they do not actually want (e.g.,
+                    # ISanitizedHTMLContent can adapt as IPlainText
+                    # when empty)
                     # so ignore that and keep trying
                     exc_info = sys.exc_info()
 
@@ -362,10 +374,14 @@ class ObjectLen(FieldValidationMixin, schema.MinMaxLen, _ObjectBase):  # order m
         # argument for schema.
         # But to work with the superclass, we have to pass it as a keyword arg.
         # it's weird.
-        super(ObjectLen, self).__init__(schema=sch, min_length=min_length, max_length=max_length, **kwargs)
+        super(ObjectLen, self).__init__(schema=sch,
+                                        min_length=min_length,
+                                        max_length=max_length,
+                                        **kwargs)
 
     def _fixup_validation_error_no_args(self, e, value):
-        e.args = (value, e.__doc__, self.__fixup_name__, self.schema, list(interface.providedBy(value)))
+        e.args = (value, e.__doc__, self.__fixup_name__, self.schema,
+                  list(interface.providedBy(value)))
 
 class Int(FieldValidationMixin, schema.Int):
 
@@ -436,13 +452,14 @@ class DecodingValidTextLine(ValidTextLine):
 
 class ValidRegularExpression(ValidTextLine):
 
-    def __init__(self, pattern, flags=re.U | re.I | re.M, *args, **kwargs):
+    def __init__(self, pattern, flags=(re.U|re.I|re.M), *args, **kwargs):
         super(ValidRegularExpression, self).__init__(*args, **kwargs)
         self.flags = flags
         self.pattern = pattern
         self.prog = re.compile(pattern, flags)
 
-    def constraint(self, value):
+    def constraint(self, value): # pylint:disable=method-hidden
+        # If they pass a 'constraint' kwarg, it will override this.
         return self.prog.match(value) is not None
 
 ValidRegEx = ValidRegularExpression
@@ -478,7 +495,9 @@ class HTTPURL(ValidURI):
                 value = u'http://' + value
         result = super(HTTPURL, self).fromUnicode(value)
         if result.count(u':') != 1:
-            self._reraise_validation_error(sch_interfaces.InvalidURI(orig_value), orig_value, _raise=True)
+            self._reraise_validation_error(sch_interfaces.InvalidURI(orig_value),
+                                           orig_value,
+                                           _raise=True)
 
         return result
 
@@ -547,7 +566,8 @@ class _SequenceFromObjectMixin(object):
             raise sch_interfaces.WrongType(context, self._type)
 
         result = self._do_fromObject(context)
-        if isinstance(self._type, type) and self._type is not self._default_type:  # single type is a factory
+        if (isinstance(self._type, type)
+                and self._type is not self._default_type):  # single type is a factory
             result = self._type(result)
         return result
 
@@ -564,7 +584,10 @@ class ListOrTupleFromObject(_SequenceFromObjectMixin, ListOrTuple):
             raise sch_interfaces.WrongType()
 
 @interface.implementer(IFromObject)
-class TupleFromObject(_ValueTypeAddingDocMixin, _SequenceFromObjectMixin, FieldValidationMixin, schema.Tuple):
+class TupleFromObject(_ValueTypeAddingDocMixin,
+                      _SequenceFromObjectMixin,
+                      FieldValidationMixin,
+                      schema.Tuple):
     """
     The field_type MUST be a :class:`Variant`, or more generally,
     something supporting :class:`IFromObject`. When setting through this object,
@@ -590,7 +613,8 @@ class DictFromObject(_ValueTypeAddingDocMixin,
                      FieldValidationMixin,
                      schema.Dict):
     """
-    The `key_type` and `value_type` must be supporting :class:`IFromObject` or :class:`.IFromUnicode`.
+    The `key_type` and `value_type` must be supporting
+    :class:`IFromObject` or :class:`.IFromUnicode`.
     """
 
     def _do_fromObject(self, context):

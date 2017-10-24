@@ -1,74 +1,76 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-
+Tests for fieldproperty.py
 """
 
-from __future__ import print_function, absolute_import, division
-__docformat__ = "restructuredtext en"
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-logger = __import__('logging').getLogger(__name__)
-
-#disable: accessing protected members, too many methods
-#pylint: disable=W0212,R0904
+# stdlib imports
 import doctest
 import unittest
 
 from Acquisition import Implicit
 from ExtensionClass import Base
-
+from zope.interface import Interface
+from zope.interface import implementer
 from zope.schema.interfaces import SchemaNotProvided
 from zope.schema.interfaces import WrongType
 
 from nti.schema.field import Object
 from nti.schema.field import ValidTextLine as TextLine
-
 from nti.schema.fieldproperty import AcquisitionFieldProperty
 from nti.schema.fieldproperty import AdaptingFieldProperty
 from nti.schema.fieldproperty import AdaptingFieldPropertyStoredThroughField
 from nti.schema.fieldproperty import UnicodeConvertingFieldProperty
-from nti.schema.fieldproperty import createFieldProperties
 from nti.schema.fieldproperty import createDirectFieldProperties
-
-from zope import interface
+from nti.schema.fieldproperty import createFieldProperties
+from nti.testing.matchers import aq_inContextOf
 
 from hamcrest import assert_that
-from hamcrest import is_
-from hamcrest import has_property
-from hamcrest import has_key
-from hamcrest import none
-from hamcrest import is_not
-does_not = is_not
-from hamcrest import has_length
 from hamcrest import calling
+from hamcrest import has_key
+from hamcrest import has_length
+from hamcrest import has_property
+from hamcrest import is_
+from hamcrest import is_not
+from hamcrest import none
 from hamcrest import raises
 
-from nti.testing.matchers import aq_inContextOf
+#disable: accessing protected members, too many methods
+#pylint: disable=W0212,R0904,inherit-non-class
+
+__docformat__ = "restructuredtext en"
+
+does_not = is_not
 
 
 class TestAqFieldProperty(unittest.TestCase):
 
     def test_aq_property(self):
 
-        class IBaz(interface.Interface):
+        class IBaz(Interface):
             pass
 
-        class IFoo(interface.Interface):
+        class IFoo(Interface):
             ob = Object(IBaz)
 
-        @interface.implementer(IBaz)
+        @implementer(IBaz)
         class Baz(object):
             pass
 
         class BazAQ(Implicit, Baz):
             pass
 
-        @interface.implementer(IFoo)
+        @implementer(IFoo)
         class Foo(Base):
             ob = AcquisitionFieldProperty(IFoo['ob'])
 
         assert_that(Foo, has_property('ob', is_(AcquisitionFieldProperty)))
 
+        # pylint:disable=blacklisted-name
         foo = Foo()
         assert_that(foo, has_property('ob', none()))
 
@@ -81,10 +83,10 @@ class TestAqFieldProperty(unittest.TestCase):
 class TestCreateFieldProperties(unittest.TestCase):
 
     def test_create_field_properties(self):
-        class IBaz(interface.Interface):
+        class IBaz(Interface):
             pass
 
-        class IA(interface.Interface):
+        class IA(Interface):
             a = TextLine(title=u"a")
 
         class IB(IA):
@@ -108,7 +110,7 @@ class TestCreateFieldProperties(unittest.TestCase):
 class TestUnicodeFieldProperty(unittest.TestCase):
 
     def test_set_bytes(self):
-        class IA(interface.Interface):
+        class IA(Interface):
             a = TextLine(title=u"a")
 
         class A(object):
@@ -122,13 +124,13 @@ class TestUnicodeFieldProperty(unittest.TestCase):
 class TestAdaptingFieldProperty(unittest.TestCase):
 
     def test_(self):
-        class IBaz(interface.Interface):
+        class IBaz(Interface):
             pass
 
-        class IFoo(interface.Interface):
+        class IFoo(Interface):
             ob = Object(IBaz)
 
-        @interface.implementer(IBaz)
+        @implementer(IBaz)
         class Baz(object):
             pass
 
@@ -143,7 +145,7 @@ class TestAdaptingFieldProperty(unittest.TestCase):
 
             assert_that(calling(fp).with_args(None), raises(WrongType))
 
-            @interface.implementer(IFoo)
+            @implementer(IFoo)
             class O(object):
                 ob = fp(IFoo['ob'])
 
