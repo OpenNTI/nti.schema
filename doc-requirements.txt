@@ -1,6 +1,1 @@
-pip>=9
-sphinx>=1.5
-setuptools>=23.0.0
-sphinxcontrib-programoutput
-repoze.sphinx.autointerface >= 0.8
-sphinx_rtd_theme
+.[docs]

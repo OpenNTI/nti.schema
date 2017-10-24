@@ -44,7 +44,6 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.extlinks',
     'sphinx.ext.viewcode',
-    'sphinxcontrib.programoutput',
     'repoze.sphinx.autointerface',
 ]
 

@@ -1,7 +1,3 @@
-============
- nti.schema
-============
-
 .. include:: ../README.rst
 
 .. toctree::
