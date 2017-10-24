@@ -5,24 +5,21 @@ Computed attributes based on schema fields.
 
 """
 
-from __future__ import print_function, absolute_import, division
-__docformat__ = "restructuredtext en"
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-logger = __import__('logging').getLogger(__name__)
-
+# stdlib imports
 import sys
-
-from zope.schema import interfaces as sch_interfaces
-
-# Re-export some things as part of our public API so we can
-# later re-implement them locally if needed
-
-from zope.schema.fieldproperty import FieldProperty
-from zope.schema.fieldproperty import createFieldProperties
-from zope.schema.fieldproperty import FieldPropertyStoredThroughField
 
 from Acquisition import aq_base
 from Acquisition.interfaces import IAcquirer
+from zope.schema import interfaces as sch_interfaces
+from zope.schema.fieldproperty import FieldProperty
+from zope.schema.fieldproperty import FieldPropertyStoredThroughField
+from zope.schema.fieldproperty import createFieldProperties
+
+__docformat__ = "restructuredtext en"
 
 class AcquisitionFieldProperty(FieldProperty):
     """
@@ -84,7 +81,7 @@ class AdaptingFieldProperty(FieldProperty):
         self.schema = _find_schema_from_field(field)
         super(AdaptingFieldProperty, self).__init__(field, name=name)
 
-AdaptingFieldProperty.__set__ =  _make_adapter_set(AdaptingFieldProperty)
+AdaptingFieldProperty.__set__ = _make_adapter_set(AdaptingFieldProperty)
 
 class AdaptingFieldPropertyStoredThroughField(FieldPropertyStoredThroughField):
     """
@@ -97,7 +94,8 @@ class AdaptingFieldPropertyStoredThroughField(FieldPropertyStoredThroughField):
         self.schema = _find_schema_from_field(field)
         super(AdaptingFieldPropertyStoredThroughField, self).__init__(field, name=name)
 
-AdaptingFieldPropertyStoredThroughField.__set__ =  _make_adapter_set(AdaptingFieldPropertyStoredThroughField)
+AdaptingFieldPropertyStoredThroughField.__set__ = _make_adapter_set(
+    AdaptingFieldPropertyStoredThroughField)
 
 def createDirectFieldProperties(__schema, omit=(), adapting=False):
     """
@@ -145,7 +143,7 @@ def createDirectFieldProperties(__schema, omit=(), adapting=False):
     __before = list(locals().keys())
     createFieldProperties(__schema, omit=__not_my_names)
 
-    __frame = sys._getframe(1)
+    __frame = sys._getframe(1) # pylint:disable=protected-access
     for k, v in list(locals().items()):
         if k not in __before:
             if adapting and sch_interfaces.IObject.providedBy(__schema[k]):
