@@ -56,7 +56,7 @@ setup(
         'zope.i18n',
         'zope.i18nmessageid',
         'zope.vocabularyregistry',
-        'zope.deferredimport',
+        'zope.deferredimport >= 4.2.1',
     ],
     extras_require={
         'test': [

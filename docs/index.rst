@@ -10,6 +10,7 @@
    subscribers
    vocabulary
    eqhash
+   testing
    changelog
 
 ====================

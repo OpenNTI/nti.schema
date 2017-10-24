@@ -1,6 +1,6 @@
-==========================
- :mod:`nti.schema.eqhash`
-==========================
+===================
+ nti.schema.eqhash
+===================
 
 .. automodule:: nti.schema.eqhash
     :members:
