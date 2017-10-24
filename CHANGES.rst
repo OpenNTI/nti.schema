@@ -3,7 +3,7 @@
 =========
 
 
-1.3.2 (unreleased)
+1.3.2 (2017-10-24)
 ==================
 
 - Depend on zope.deferredimport >= 4.2.1 to be able to generate Sphinx
