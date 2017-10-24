@@ -7,6 +7,7 @@ include nose2.cfg
 include tox.ini
 include .travis.yml
 include .coveragerc
+include .isort.cfg
 
 recursive-include src *.po
 recursive-include src *.pot
