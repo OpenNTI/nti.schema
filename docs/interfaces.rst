@@ -1,6 +1,6 @@
-==============================
- :mod:`nti.schema.interfaces`
-==============================
+=======================
+ nti.schema.interfaces
+=======================
 
 .. automodule:: nti.schema.interfaces
     :members:
