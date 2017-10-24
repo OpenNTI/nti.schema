@@ -6,7 +6,9 @@
 1.3.2 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Depend on zope.deferredimport >= 4.2.1 to be able to generate Sphinx
+  documentation.
+- Clean up code to match PEP8.
 
 
 1.3.1 (2017-10-18)
