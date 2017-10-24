@@ -1,6 +1,6 @@
-==============================
- :mod:`nti.schema.jsonschema`
-==============================
+=======================
+ nti.schema.jsonschema
+=======================
 
 .. automodule:: nti.schema.jsonschema
     :members:

@@ -1,32 +1,35 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-For producing a JSON schema appropriate for use by clients, based on a Zope schema.
+For producing a JSON schema appropriate for use by clients, based on a
+Zope schema.
 
-.. note:: This schema is ad-hoc and non-standard.
+The ``TAG`` constants are intended to be set as (boolean) tagged values
+on fields of interfaces, helping determine how the schema is built.
 
-.. $Id$
+..  note:: This schema is ad-hoc and non-standard.
 """
 
-from __future__ import print_function, absolute_import, division
-__docformat__ = "restructuredtext en"
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-logger = __import__('logging').getLogger(__name__)
-
-from zope import interface
-
+from six import integer_types
+from six import string_types
+from zope.interface.interfaces import IMethod
 from zope.schema import interfaces as sch_interfaces
 from zope.schema import vocabulary as sch_vocabulary
 
 from nti.schema.interfaces import find_most_derived_interface
 
-from six import string_types
-from six import integer_types
+__docformat__ = "restructuredtext en"
+
 
 #: Don't display this by default in the UI
 TAG_HIDDEN_IN_UI = "nti.dataserver.users.field_hidden_in_ui"
 
 #: Qualifying details about how the field should be treated, such as data source
+#: The ``UI_TYPE`` values are defined known values for this tag.
 TAG_UI_TYPE = 'nti.dataserver.users.field_type'
 
 #: Overrides the value from the field itself
@@ -36,8 +39,12 @@ TAG_REQUIRED_IN_UI = 'nti.dataserver.users.field_required'
 TAG_READONLY_IN_UI = 'nti.dataserver.users.field_readonly'
 
 # Known types
+#: The email type
 UI_TYPE_EMAIL = 'nti.dataserver.users.interfaces.EmailAddress'
-UI_TYPE_HASHED_EMAIL = UI_TYPE_EMAIL + ":Hashed"  # So that a begins-with test will match either, making validation easier
+#: An email type that is stored as a non-recoverable hash.
+#: The value is chosen so that a begins-with test will match
+#: either this or :const:`UI_TYPE_EMAIL`, making validation easier
+UI_TYPE_HASHED_EMAIL = UI_TYPE_EMAIL + ":Hashed"
 
 #: Something that can be set once, typically during account creation
 UI_TYPE_ONE_TIME_CHOICE = 'nti.dataserver.users.interfaces.OneTimeChoice'
@@ -194,7 +201,7 @@ class JsonSchemafier(object):
         ext_schema = {}
         for k, v in self._iter_names_and_descriptions():
             __traceback_info__ = k, v
-            if interface.interfaces.IMethod.providedBy(v):
+            if IMethod.providedBy(v):
                 continue
             # v could be a schema field or an interface.Attribute
             if not self.allow_field(k, v):
