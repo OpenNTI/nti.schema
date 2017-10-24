@@ -1,27 +1,32 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-
+Tests for eqhash.py
 
 """
 
-from __future__ import print_function, absolute_import, division
-__docformat__ = "restructuredtext en"
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-logger = __import__('logging').getLogger(__name__)
+# stdlib imports
+import unittest
+
+
+from ..eqhash import EqHash
+
+from hamcrest import assert_that
+from hamcrest import calling
+from hamcrest import is_
+from hamcrest import is_not
+from hamcrest import raises
+
+__docformat__ = "restructuredtext en"
 
 #disable: accessing protected members, too many methods
 #pylint: disable=W0212,R0904
 
-import unittest
-from hamcrest import assert_that
-from hamcrest import is_
-from hamcrest import is_not
-from hamcrest import calling
-from hamcrest import raises
 
-from ..eqhash import EqHash
-from nti.schema.schema import _superhash as superhash # make sure works
 
 @EqHash('a', 'b')
 class Thing(object):
@@ -175,138 +180,41 @@ class TestEqHash(unittest.TestCase):
                     raises(TypeError, "Unexpected keyword"))
 
 
-
 class TestSuperHash(unittest.TestCase):
 
-    def test_iterable(self):
-        assert_that(hash(superhash([1, 3, 5])),
-                    is_(hash(superhash([x for x in [1, 3, 5]]))))
+    def superhash(self, arg):
+        # Use the old location to make sure it works
+        from nti.schema import schema
+        return schema._superhash(arg) # pylint:disable=no-member
 
-        assert_that(superhash([1, 2]), is_not(superhash([2, 1])))
-        assert_that(hash(superhash([1, 2])), is_not(hash(superhash([2, 1]))))
+    def test_iterable(self):
+        assert_that(hash(self.superhash([1, 3, 5])),
+                    is_(hash(self.superhash([x for x in [1, 3, 5]]))))
+
+        assert_that(self.superhash([1, 2]), is_not(self.superhash([2, 1])))
+        assert_that(hash(self.superhash([1, 2])), is_not(hash(self.superhash([2, 1]))))
 
     def test_nested_dict(self):
         d = {1: 1,
              2: [1, 2, 3],
              3: {4: [4, 5, 6]}}
 
-        assert_that(superhash(d),
+        assert_that(self.superhash(d),
                     is_(
                         ((1, 1),
                          (2, (1, 2, 3)),
                          (3, ((4, (4, 5, 6)),)))
                     ))
 
-        assert_that(hash(superhash(d)),
+        assert_that(hash(self.superhash(d)),
                     is_(-6213620179105025536))
 
 
-def bench_hash(): # pragma: no cover
-    import timeit
-    import statistics
+def test_suite():
+    import doctest
+    suite = unittest.defaultTestLoader.loadTestsFromName(__name__)
+    suite.addTest(
+        doctest.DocTestSuite('nti.schema.eqhash')
+    )
 
-
-    timer = timeit.Timer('hash(thing)', 'from nti.schema.tests.test_eqhash import Thing as Thing; thing=Thing()')
-    times = timer.repeat()
-    print("Avg Base  hash", statistics.mean(times), "stddev", statistics.stdev(times))
-
-    timer = timeit.Timer('hash(thing)', 'from nti.schema.tests.test_eqhash import ChildThing as Thing; thing=Thing()')
-    times = timer.repeat()
-    print("Avg Child hash", statistics.mean(times), "stddev", statistics.stdev(times))
-
-    timer = timeit.Timer('hash(thing)', 'from nti.schema.tests.test_eqhash import Thing2 as Thing; thing=Thing()')
-    times = timer.repeat()
-    print("Avg Super  hash", statistics.mean(times), "stddev", statistics.stdev(times))
-
-    timer = timeit.Timer('hash(thing)', 'from nti.schema.tests.test_eqhash import Thing2 as Thing; thing=Thing(a={})')
-#    import cProfile
-#    import pstats
-#    pr = cProfile.Profile()
-#    pr.enable()
-    times = timer.repeat()
-#    pr.disable()
-#    ps = pstats.Stats(pr).sort_stats('cumulative')
-#    ps.print_stats(.4)
-
-    print("Avg Super2  hash", statistics.mean(times), "stddev", statistics.stdev(times))
-
-
-def bench_eq(): # pragma: no cover
-    import timeit
-    import statistics
-
-
-    timer = timeit.Timer('thing == thing2', 'from nti.schema.tests.test_eqhash import Thing as Thing; thing=Thing(); thing2 = Thing()')
-    times = timer.repeat()
-    print("Avg Base  eq", statistics.mean(times), "stddev", statistics.stdev(times))
-
-    timer = timeit.Timer('thing == thing2', 'from nti.schema.tests.test_eqhash import ChildThing as Thing; thing=Thing(); thing2 = Thing()')
-    times = timer.repeat()
-    print("Avg Child eq", statistics.mean(times), "stddev", statistics.stdev(times))
-
-    timer = timeit.Timer('thing == thing2', 'from nti.schema.tests.test_eqhash import Thing2 as Thing; thing=Thing(); thing2 = Thing()')
-    times = timer.repeat()
-    print("Avg Super  eq", statistics.mean(times), "stddev", statistics.stdev(times))
-
-    timer = timeit.Timer('thing == thing', 'from nti.schema.tests.test_eqhash import Thing2 as Thing; thing=Thing(a={}); thing2 = Thing(a={})')
-#    import cProfile
-#    import pstats
-#    pr = cProfile.Profile()
-#    pr.enable()
-    times = timer.repeat()
-#    pr.disable()
-#    ps = pstats.Stats(pr).sort_stats('cumulative')
-#    ps.print_stats(.4)
-
-
-
-
-    print("Avg Super2  eq", statistics.mean(times), "stddev", statistics.stdev(times))
-
-    timer = timeit.Timer('thing == thing2', 'from nti.schema.tests.test_eqhash import ManyThing as Thing; thing=Thing(); thing2 = Thing()')
-    times = timer.repeat()
-    print("Avg many  eq", statistics.mean(times), "stddev", statistics.stdev(times))
-
-
-# Before
-#
-# Avg Base  eq 0.790581703186 stddev 0.00709198228224
-# Avg Child eq 1.44241364797 stddev 0.00058100921717
-# Avg Super  eq 0.772551695506 stddev 0.0120497874892
-# Avg Super2  eq 0.230642795563 stddev 0.00981929676758
-
-# Best attrgetter, params as keywords:
-# Avg Base  eq 0.57781457901 stddev 0.00472933000447
-# Avg Child eq 1.13719065984 stddev 0.00751860996924
-# Avg Super  eq 0.576888004939 stddev 0.0073053209526
-# Avg Super2  eq 0.221588929494 stddev 0.00154292380992
-
-# Code generation
-# Avg Base  eq 0.436311562856 stddev 0.0159609115497
-# Avg Child eq 0.93773595492 stddev 0.0244992238919
-# Avg Super  eq 0.443862199783 stddev 0.00816548353324
-# Avg Super2  eq 0.216485659281 stddev 0.00651497010124
-
-## Many attributes
-# Before
-# Avg Base  eq 0.762074232101 stddev 0.00893669830878
-# Avg Child eq 1.46989099185 stddev 0.0260021505811
-# Avg Super  eq 0.776515642802 stddev 0.011819047442
-# Avg Super2  eq 0.2257057031 stddev 0.0025750486944
-# Avg many  eq 1.56614136696 stddev 0.0195022584734
-
-# Code generation
-# Avg Base  eq 0.410983006159 stddev 0.00708241719015
-# Avg Child eq 0.903119166692 stddev 0.0051626944104
-# Avg Super  eq 0.41703470548 stddev 0.00604558003878
-# Avg Super2  eq 0.208957354228 stddev 0.00508863378261
-# Avg many  eq 0.797417243322 stddev 0.0198358058579
-
-if __name__ == '__main__':
-    import sys
-    if '--timehash' in sys.argv:
-        bench_hash()
-    elif '--timeeq' in sys.argv:
-        bench_eq()
-    else:
-        unittest.main()
+    return suite

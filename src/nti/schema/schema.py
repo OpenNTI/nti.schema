@@ -6,16 +6,19 @@ Helpers for writing code that implements schemas.
 This module contains code based on code originally from dm.zope.schema.
 """
 
-from __future__ import absolute_import, print_function, division
-__docformat__ = "restructuredtext en"
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 from zope import interface
+from zope.deferredimport import deprecatedFrom
 from zope.interface import Interface
 from zope.interface import providedBy
-from .interfaces import ISchemaConfigured
-
 from zope.schema import getFieldsInOrder
 
+from .interfaces import ISchemaConfigured
+
+__docformat__ = "restructuredtext en"
 
 def _interface_from_spec(spec):
     """
@@ -58,11 +61,11 @@ def schemadict(spec):
 _iteritems = dict.items
 _hasattr = hasattr
 if hasattr(dict, 'iteritems'):
-    _iteritems = dict.iteritems
+    _iteritems = dict.iteritems # pylint:disable=no-member
     _marker = object()
     # The point of this is to avoid hiding exceptions (which the builtin
     # hasattr() does on Python 2)
-    def _hasattr(o, name):
+    def _hasattr(o, name): # pylint:disable=function-redefined
         return getattr(o, name, _marker) is not _marker
 
 
@@ -79,8 +82,8 @@ class SchemaConfigured(object):
             setattr(self, k, v)
         # provide default values for schema fields not set
         for f, fields in _iteritems(schema):
-          if not _hasattr(self, f):
-              setattr(self, f, fields.default)
+            if not _hasattr(self, f):
+                setattr(self, f, fields.default)
 
     # provide control over which interfaces define the data schema
     SC_SCHEMAS = None
@@ -105,15 +108,14 @@ class PermissiveSchemaConfigured(SchemaConfigured):
 
     SC_PERMISSIVE = True
 
-    def __init__( self, **kwargs ):
+    def __init__(self, **kwargs):
         if not self.SC_PERMISSIVE:
-            super(PermissiveSchemaConfigured,self).__init__( **kwargs )
+            super(PermissiveSchemaConfigured, self).__init__(**kwargs)
         else:
             _schema = schemadict(self.sc_schema_spec())
             kwargs = {k: kwargs[k] for k in kwargs if k in _schema}
-            super(PermissiveSchemaConfigured,self).__init__( **kwargs )
+            super(PermissiveSchemaConfigured, self).__init__(**kwargs)
 
-from zope.deferredimport import deprecatedFrom
 
 deprecatedFrom("Moved to nti.schema.eqhash",
                "nti.schema.eqhash",
