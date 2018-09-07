@@ -17,7 +17,11 @@ from zope.interface import Attribute
 from zope.interface import providedBy
 from zope.interface import implementer
 from zope.schema import interfaces as sch_interfaces
-from zope.schema._field import BeforeObjectAssignedEvent
+try:
+    from zope.schema._bootstrapfields import BeforeObjectAssignedEvent
+except ImportError: # pragma: no cover
+    # BWC for older zope.schema.
+    from zope.schema._field import BeforeObjectAssignedEvent
 
 __docformat__ = "restructuredtext en"
 

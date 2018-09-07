@@ -6,7 +6,8 @@
 1.3.3 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Minor fix for changes in zope.schema 4.6.0 (import
+  ``BeforeObjectAssignedEvent`` from its new, but still private, location).
 
 
 1.3.2 (2017-10-24)

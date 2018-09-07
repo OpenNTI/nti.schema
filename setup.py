@@ -52,7 +52,7 @@ setup(
         'six',
         'setuptools',
         'zope.event',
-        'zope.schema',
+        'zope.schema >= 4.6.0',
         'zope.i18n',
         'zope.i18nmessageid',
         'zope.vocabularyregistry',
