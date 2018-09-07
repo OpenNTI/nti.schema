@@ -3,7 +3,7 @@
 =========
 
 
-1.3.3 (unreleased)
+1.3.3 (2018-09-07)
 ==================
 
 - Minor fix for changes in zope.schema 4.6.0 (import
