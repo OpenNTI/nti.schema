@@ -55,7 +55,6 @@ from nti.schema.interfaces import BeforeTextAssignedEvent
 from nti.schema.interfaces import BeforeTextLineAssignedEvent
 from nti.schema.interfaces import IFromObject
 from nti.schema.interfaces import IListOrTuple
-from nti.schema.interfaces import InvalidValue
 from nti.schema.interfaces import IVariant
 
 from .schema import SchemaConfigured
@@ -109,7 +108,6 @@ def __with_set(eventfactory=BeforeSchemaFieldAssignedEvent):
         return cls
     return X
 
-InvalidValue = InvalidValue
 
 class FieldValidationMixin(object):
     """

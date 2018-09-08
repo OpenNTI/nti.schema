@@ -6,6 +6,7 @@ omit = src/nti/schema/tests/*benchmark.py
 # Coverage is run on Linux under cPython 2 and 3,
 # exclude branches that are windows, pypy
 # specific
+precision = 2
 exclude_lines =
     pragma: no cover
     def __repr__
