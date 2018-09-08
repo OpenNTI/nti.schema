@@ -51,6 +51,8 @@ def _superhash(value):
 def EqHash(*names,
            **kwargs):
     """
+    EqHash(*names, include_super=False, superhash=False, include_type=False)
+
     A class decorator factory for the common pattern of writing
     ``__eq__``/``__ne__`` and ``__hash__`` methods that check the same
     list of attributes on a given object.

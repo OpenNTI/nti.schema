@@ -137,6 +137,8 @@ class FieldValidationMixin(object):
 
     def _reraise_validation_error(self, e, value, _raise=False):
         # This must be called inside a try/except with an active exception.
+        assert e.field is not None, "A _validate method failed to use ex.with_field_and_value()"
+
         if len(e.args) == 1:  # typically the message is the only thing
             self._fixup_validation_error_args(e, value)
         elif not e.args:  # Typically a SchemaNotProvided. Grr.
@@ -157,9 +159,6 @@ class FieldValidationMixin(object):
             e.args = (self.__fixup_name__.capitalize() + ' is too long.',
                       self.__fixup_name__,
                       value)
-        e.field = self
-        if not getattr(e, 'value', None):
-            e.value = value
         if _raise:
             raise e
         raise # pylint:disable=misplaced-bare-raise
@@ -167,12 +166,7 @@ class FieldValidationMixin(object):
     def _validate(self, value):
         try:
             super(FieldValidationMixin, self)._validate(value)
-        except sch_interfaces.WrongContainedType as e:
-            # args[0] will either be a list of Exceptions or a list of tuples, (name, exception),
-            # depending who did the validating (dm.zope.schema doing the later)
-            e.errors = [arg[1] if isinstance(arg, tuple) else arg for arg in e.args[0]]
-            e.value = value
-            e.field = self
+        except sch_interfaces.WrongContainedType:
             raise
         except sch_interfaces.ValidationError as e:
             self._reraise_validation_error(e, value)
@@ -191,30 +185,24 @@ class ValidDatetime(FieldValidationMixin, Datetime):
         try:
             super(ValidDatetime, self)._validate(value)
         except sch_interfaces.WrongType as e:
-            raise sch_interfaces.SchemaNotProvided(value, e.__doc__,
-                                                   self.__fixup_name__, self.schema,
-                                                   list(interface.providedBy(value)))
+            raise sch_interfaces.SchemaNotProvided(
+                value, e.__doc__,
+                self.__fixup_name__, self.schema,
+                list(interface.providedBy(value))).with_field_and_value(self, value)
 
         # schema has to be provided by value
         if not self.schema.providedBy(value):  # pragma: no cover
-            raise sch_interfaces.SchemaNotProvided
+            raise sch_interfaces.SchemaNotProvided().with_field_and_value(self, value)
 
-_iteritems = getattr(dict, 'iteritems', dict.items)
+def _iteritems(o):
+    meth = getattr(o, 'iteritems', None) or getattr(o, 'items')
+    return meth()
 
 class Object(FieldValidationMixin, _ObjectBase):
     """
     Improved ``zope.schema.Object``.
     """
 
-    # The original dm.zope.schema.Object that we were using before
-    # contains extra validation logic, but as far as I can tell, it's
-    # pretty much a duplicate of zope.schema.Object. Perhaps that wasn't
-    # always the case? At any rate, elide it, because it never seems to get
-    # called (the error would already have been raised.)
-
-    def _fixup_validation_error_no_args(self, e, value):
-        e.args = (value, e.__doc__, self.__fixup_name__, self.schema,
-                  list(interface.providedBy(value)))
 
 @interface.implementer(IVariant)
 class Variant(FieldValidationMixin, schema.Field):
@@ -257,18 +245,15 @@ class Variant(FieldValidationMixin, schema.Field):
             field.__name__ = name
     __name__ = property(__get_name, __set_name)
 
-    def getDoc(self):
-        doc = super(Variant, self).getDoc()
-        doc += '\n\nValue is one of:'
+    def getExtraDocLines(self):
+        lines = super(Variant, self).getExtraDocLines()
+        lines.append(".. rubric:: Possible Values")
+
         for field in self.fields:
-            fielddoc = field.getDoc()
-            if not fielddoc:
-                fielddoc = getattr(type(field), '__doc__', '')
-            if fielddoc:
-                doc += '\n\n\t' + fielddoc
-        # Definition lists must end with a blank line
-        doc += '\n'
-        return doc
+            lines.append(".. rubric:: Option")
+            lines.append(field.getDoc())
+
+        return lines
 
     def bind(self, obj):
         # The fields member really does exist
@@ -379,10 +364,6 @@ class ObjectLen(FieldValidationMixin, schema.MinMaxLen, _ObjectBase):  # order m
                                         max_length=max_length,
                                         **kwargs)
 
-    def _fixup_validation_error_no_args(self, e, value):
-        e.args = (value, e.__doc__, self.__fixup_name__, self.schema,
-                  list(interface.providedBy(value)))
-
 class Int(FieldValidationMixin, schema.Int):
 
     def fromUnicode(self, value):
@@ -399,6 +380,11 @@ class Float(FieldValidationMixin, schema.Float):
 class Number(FieldValidationMixin, schema.Float):
     """
     A field that parses like a float from a string, but accepts any number.
+
+    .. deprecated:: 1.4.0
+       Use :class:`zope.schema.Number` if you really want arbitrary
+       numbers (including fractions and decimals). You probably want
+       :class:`zope.schema.Real` instead, though.
     """
     _type = numbers.Number
 
@@ -495,9 +481,10 @@ class HTTPURL(ValidURI):
                 value = u'http://' + value
         result = super(HTTPURL, self).fromUnicode(value)
         if result.count(u':') != 1:
-            self._reraise_validation_error(sch_interfaces.InvalidURI(orig_value),
-                                           orig_value,
-                                           _raise=True)
+            self._reraise_validation_error(
+                sch_interfaces.InvalidURI(orig_value).with_field_and_value(self, orig_value),
+                orig_value,
+                _raise=True)
 
         return result
 
@@ -508,40 +495,35 @@ class _ValueTypeAddingDocMixin(object):
     in :mod:`repoze.sphinx.autointerface`.
     """
 
-    document_value_type = True
+    def getExtraDocLines(self):
+        lines = super(_ValueTypeAddingDocMixin, self).getExtraDocLines()
+        accept_types = getattr(self, 'accept_types', None)
+        if accept_types:
+            # Private helper. If it goes away or changes, making sphinx docs will
+            # fail, but we shouldn't have any runtime problems.
+            from zope.schema._bootstrapfields import _DocStringHelpers
+            lines.append(_DocStringHelpers.make_class_field('Accepted Types', accept_types))
+        return lines
 
-    def getDoc(self):
-        doc = super(_ValueTypeAddingDocMixin, self).getDoc()
-        if self.document_value_type:
-            value_type = getattr(self, 'value_type', None)
-            if value_type is not None:
-                doc += '\nThe value type is documented as:\n\t' + value_type.getDoc()
-                doc += '\n'
-            _type = getattr(self, 'accept_types', getattr(self, '_type', None))
-            def _class_dir(t):
-                mod = t.__module__ + '.' if t.__module__ and t.__module__ != '__builtin__' else ''
-                return ':class:`' + mod + t.__name__ + '`'
-
-            if isinstance(_type, type): # pragma: no cover
-                doc += '\nThe acceptable class is ' + _class_dir(_type) + '.'
-            elif _type:
-                types = [_class_dir(t) for t in _type]
-                doc += '\nThe acceptable classes are ' + ' , '.join(types) + '.'
-        return doc
 
 @__with_set(BeforeSequenceAssignedEvent)
-class IndexedIterable(_ValueTypeAddingDocMixin, FieldValidationMixin, schema.List):
+class IndexedIterable(_ValueTypeAddingDocMixin, FieldValidationMixin, schema.Sequence):
     """
     An arbitrary (indexable) iterable, not necessarily a list or tuple;
     either of those would be acceptable at any time (however, so would a string,
     so be careful. Try ListOrTuple if that's a problem).
 
     The values may be homogeneous by setting the value_type.
+
+    .. versionchanged:: 1.4.0
+       Subclass :class:`zope.schema.Sequence` instead of :class:`zope.schema.List`,
+       which adds checking that the value is indeed a sequence.
     """
-    _type = None  # Override from super to not force a list
+
 
 @interface.implementer(IListOrTuple)
 class ListOrTuple(IndexedIterable):
+    "Restrict sequence values specifically to list and tuple."
     _type = (list, tuple)
 
 class _SequenceFromObjectMixin(object):
@@ -560,16 +542,20 @@ class _SequenceFromObjectMixin(object):
         result = [converter(x) for x in context]
         return result
 
-    def fromObject(self, context):
-        check_type = self.accept_types or self._type
-        if check_type is not None and not isinstance(context, check_type):
-            raise sch_interfaces.WrongType(context, self._type)
-
-        result = self._do_fromObject(context)
+    def _do_convert_result(self, result):
         if (isinstance(self._type, type)
                 and self._type is not self._default_type):  # single type is a factory
             result = self._type(result)
         return result
+
+    def fromObject(self, context):
+        check_type = self.accept_types or self._type
+        if check_type is not None and not isinstance(context, check_type):
+            raise sch_interfaces.WrongType(context, check_type).with_field_and_value(self, context)
+
+        result = self._do_fromObject(context)
+        return self._do_convert_result(result)
+
 
 @interface.implementer(IFromObject)
 class ListOrTupleFromObject(_SequenceFromObjectMixin, ListOrTuple):
@@ -581,7 +567,8 @@ class ListOrTupleFromObject(_SequenceFromObjectMixin, ListOrTuple):
     def __init__(self, *args, **kwargs):
         super(ListOrTupleFromObject, self).__init__(*args, **kwargs)
         if not IFromObject.providedBy(self.value_type):
-            raise sch_interfaces.WrongType()
+            raise sch_interfaces.WrongType(self.value_type, IFromObject).with_field_and_value(
+                self, self.value_type)
 
 @interface.implementer(IFromObject)
 class TupleFromObject(_ValueTypeAddingDocMixin,
@@ -611,11 +598,20 @@ class TupleFromObject(_ValueTypeAddingDocMixin,
 class DictFromObject(_ValueTypeAddingDocMixin,
                      _SequenceFromObjectMixin,
                      FieldValidationMixin,
-                     schema.Dict):
+                     schema.Mapping):
     """
     The `key_type` and `value_type` must be supporting
     :class:`IFromObject` or :class:`.IFromUnicode`.
+
+    .. versionchanged:: 1.4.0
+       Subclass :class:`zope.schema.Mapping` instead of :class:`zope.schema.Dict`,
+       allowing for any mapping (such as BTrees), not just dicts. However, the validated
+       value is still a dict.
     """
+
+    def _do_convert_result(self, result):
+        assert isinstance(result, dict)
+        return result
 
     def _do_fromObject(self, context):
         key_converter = self._converter_for(self.key_type)

@@ -10,8 +10,11 @@ from __future__ import print_function
 
 # stdlib imports
 import unittest
+import warnings
+
 
 from zope.component import eventtesting
+
 from zope.interface.common import interfaces as cmn_interfaces
 from zope.schema import Dict
 from zope.schema.interfaces import InvalidURI
@@ -42,9 +45,12 @@ from nti.schema.interfaces import IBeforeDictAssignedEvent
 from nti.schema.interfaces import IBeforeSequenceAssignedEvent
 from nti.schema.interfaces import IVariant
 # Import from the BWC location
-from nti.schema.testing import validated_by # pylint:disable=no-name-in-module
-from nti.schema.testing import verifiably_provides # pylint:disable=no-name-in-module
-from nti.schema.testing import not_validated_by # pylint:disable=no-name-in-module
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    from nti.schema.testing import validated_by # pylint:disable=no-name-in-module
+    from nti.schema.testing import verifiably_provides # pylint:disable=no-name-in-module
+    from nti.schema.testing import not_validated_by # pylint:disable=no-name-in-module
 
 
 from . import IUnicode
@@ -53,9 +59,11 @@ from . import SchemaLayer
 from hamcrest import assert_that
 from hamcrest import calling
 from hamcrest import contains
+from hamcrest import contains_string
 from hamcrest import has_length
 from hamcrest import has_property
 from hamcrest import is_
+from hamcrest import is_not
 from hamcrest import none
 from hamcrest import raises
 
@@ -133,8 +141,14 @@ class TestVariant(unittest.TestCase):
         assert_that(calling(syntax_or_lookup.fromObject).with_args(object()),
                     raises(TypeError))
 
-        # cover
-        syntax_or_lookup.getDoc()
+    def test_getDoc(self):
+        syntax_or_lookup = Variant((Object(cmn_interfaces.ISyntaxError),
+                                    Object(cmn_interfaces.ILookupError),
+                                    Object(IUnicode)))
+
+        doc = syntax_or_lookup.getDoc()
+        assert_that(doc, contains_string('.. rubric:: Possible Values'))
+        assert_that(doc, contains_string('.. rubric:: Option'))
 
     def test_complex_variant(self):
 
@@ -188,7 +202,7 @@ class TestVariant(unittest.TestCase):
             schema = IUnicode
 
             def validate(self, value):
-                raise SchemaNotProvided()
+                raise SchemaNotProvided().with_field_and_value(self, value)
         weird_field = WeirdField(IUnicode)
         accept_field = Number()
 
@@ -335,7 +349,7 @@ class TestFieldValidationMixin(unittest.TestCase):
         field = FieldValidationMixin()
         field.__name__ = 'foo'
 
-        ex = SchemaNotProvided('msg')
+        ex = SchemaNotProvided('msg').with_field_and_value(field, 'value')
         try:
             field._reraise_validation_error(ex, 'value', _raise=True)
         except SchemaNotProvided:
@@ -345,7 +359,7 @@ class TestFieldValidationMixin(unittest.TestCase):
         field = FieldValidationMixin()
         field.__name__ = 'foo'
 
-        ex = SchemaNotProvided()
+        ex = SchemaNotProvided().with_field_and_value(field, 'value')
         try:
             field._reraise_validation_error(ex, 'value', _raise=True)
         except SchemaNotProvided:
@@ -362,3 +376,62 @@ class TestRegex(unittest.TestCase):
         field = ValidRegularExpression('[bankai|shikai]')
         assert_that(field.constraint("Shikai"), is_(True))
         assert_that(field.constraint("banKAI"), is_(True))
+
+
+class TestValueTypeAddingDocMixin(unittest.TestCase):
+
+    def _getTargetClass(self):
+        from nti.schema.field import _ValueTypeAddingDocMixin
+        return _ValueTypeAddingDocMixin
+
+    def test_getDoc(self):
+
+        from zope.schema import Field
+
+        class MyField(self._getTargetClass(), Field):
+            _type = object
+            accept_types = (list, tuple)
+
+        doc = MyField().getDoc()
+
+        assert_that(doc, contains_string(':Allowed Type: :class:`object`'))
+        assert_that(doc, contains_string(':Accepted Types: :class:`list`, :class:`tuple`'))
+
+
+class TestDictFromObject(unittest.TestCase):
+
+    def _getTargetClass(self):
+        from nti.schema.field import DictFromObject
+        return DictFromObject
+
+    def _makeOne(self, *args, **kwargs):
+        return self._getTargetClass()(*args, **kwargs)
+
+    def test_accepts_mapping(self):
+        from six.moves import UserDict
+
+        try:
+            from collections.abc import Mapping
+        except ImportError:
+            from collections import Mapping
+
+        # On Python 2, UserDict is not registered as a Mapping.
+        if not issubclass(UserDict, Mapping):
+            Mapping.register(UserDict)
+
+        field = self._makeOne(key_type=Int(), value_type=Float())
+
+        value = UserDict({'1': '42'})
+        assert_that(value, is_(Mapping))
+        assert_that(value, is_not(dict))
+
+        result = field.fromObject(value)
+        assert_that(result, is_(dict))
+        assert_that(result, is_({1: 42.0}))
+
+    def test_getDoc(self):
+        field = self._makeOne(key_type=Int(), value_type=Float())
+        doc = field.getDoc()
+
+        assert_that(doc, contains_string('.. rubric:: Value Type'))
+        assert_that(doc, contains_string('.. rubric:: Key Type'))

@@ -24,7 +24,7 @@ __docformat__ = "restructuredtext en"
 class AcquisitionFieldProperty(FieldProperty):
     """
     A field property that supports acquisition. Returned objects
-    will be __of__ the instance, and set objects will always be the unwrapped
+    will be ``__of__`` the instance, and set objects will always be the unwrapped
     base.
     """
 

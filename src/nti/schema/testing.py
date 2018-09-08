@@ -17,10 +17,5 @@ moved to :mod:`nti.testing.matchers`:
 from __future__ import division
 from __future__ import print_function
 
-from zope.deferredimport import deprecatedFrom
-
-deprecatedFrom("Matchers live in nti.testing.matchers",
-               "nti.testing.matchers",
-               "provides", "implements",
-               "verifiably_provides", "validly_provides",
-               "validated_by", "not_validated_by")
+from zope.deprecation import moved
+moved('nti.testing.matchers')
