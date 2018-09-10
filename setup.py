@@ -52,10 +52,11 @@ setup(
         'six',
         'setuptools',
         'zope.event',
-        'zope.schema >= 4.6.0',
+        'zope.schema >= 4.6.1',
         'zope.i18n',
         'zope.i18nmessageid',
         'zope.vocabularyregistry',
+        'zope.deprecation',
         'zope.deferredimport >= 4.2.1',
     ],
     extras_require={
@@ -66,6 +67,7 @@ setup(
         ],
         'docs': [
             'Sphinx',
+            'nti.testing',
             'repoze.sphinx.autointerface',
             'sphinx_rtd_theme',
         ],

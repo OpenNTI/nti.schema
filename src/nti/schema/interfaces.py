@@ -10,6 +10,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from zope.deprecation import deprecated
+
 from zope.schema import Text
 from zope.schema import TextLine
 from zope.interface import Interface
@@ -133,26 +135,34 @@ class BeforeDictAssignedEvent(BeforeSchemaFieldAssignedEvent):
 
 BeforeObjectAssignedEvent = BeforeObjectAssignedEvent
 
-class InvalidValue(sch_interfaces.InvalidValue):
+def InvalidValue(*args, **kwargs):
     """
+    InvalidValue(*args, field=None, value=None)
+
     Adds a field specifically to carry the value that is invalid.
+
+    .. deprecated:: 1.4.0
+       This is now just a convenience wrapper around
+       :class:`zope.schema.interfaces.InvalidValue` that calls
+       :meth:`.zope.schema.interfaces.ValidationError.with_field_and_value`
+       before returning the exception.
     """
-    value = None
+    # We can't write the syntax we want to in Python 2.
 
-    def __init__(self, *args, **kwargs):
-        super(InvalidValue, self).__init__(*args)
-        if 'value' in kwargs:
-            self.value = kwargs['value']
-        if 'field' in kwargs:
-            self.field = kwargs['field']
+    field = kwargs.pop('field', None)
+    value = kwargs.pop('value', None)
+    if kwargs:
+        raise TypeError("Too many kwargs for function InvalidValue")
+    return sch_interfaces.InvalidValue(*args).with_field_and_value(
+        field, value
+    )
 
-# And we monkey patch it in to InvalidValue as well
-if not hasattr(sch_interfaces.InvalidValue, 'value'):
-    setattr(sch_interfaces.InvalidValue, 'value', None)
+deprecated('InvalidValue',
+           "Use zope.schema.interfaces.InvalidValue.with_field_and_value.")
 
-# And give all validation errors a 'field'
-if not hasattr(sch_interfaces.ValidationError, 'field'):
-    setattr(sch_interfaces.ValidationError, 'field', None)
+assert hasattr(sch_interfaces.InvalidValue, 'value')
+assert hasattr(sch_interfaces.ValidationError, 'field')
+
 
 class IFromObject(Interface):
     """

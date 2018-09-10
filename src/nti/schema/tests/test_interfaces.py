@@ -12,7 +12,10 @@ from __future__ import print_function
 # stdlib imports
 import unittest
 
-from ..interfaces import InvalidValue
+from zope.deprecation import Suppressor
+
+with Suppressor():
+    from ..interfaces import InvalidValue
 
 from hamcrest import assert_that
 from hamcrest import has_property
@@ -33,3 +36,6 @@ class TestInvalidValue(unittest.TestCase):
         v = InvalidValue(value=1, field=1)
         assert_that(v, has_property('value', 1))
         assert_that(v, has_property('field', 1))
+
+        with self.assertRaises(TypeError):
+            InvalidValue(value=1, field=2, other=3)

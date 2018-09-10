@@ -3,11 +3,16 @@
 =========
 
 
-1.3.4 (unreleased)
+1.4.0 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Drop support for ``dm.zope.schema`` fields, in particular the
+  ``Object`` field. The validation performed by ``zope.schema.Object``
+  is much improved.
 
+- Drop support for ``zope.schema`` older than 4.6.0.
+
+- Deprecate ``nti.schema.field.Number``.
 
 1.3.3 (2018-09-07)
 ==================

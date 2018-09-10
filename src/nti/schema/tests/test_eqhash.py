@@ -185,7 +185,10 @@ class TestSuperHash(unittest.TestCase):
     def superhash(self, arg):
         # Use the old location to make sure it works
         from nti.schema import schema
-        return schema._superhash(arg) # pylint:disable=no-member
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            return schema._superhash(arg) # pylint:disable=no-member
 
     def test_iterable(self):
         assert_that(hash(self.superhash([1, 3, 5])),
