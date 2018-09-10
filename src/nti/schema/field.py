@@ -15,10 +15,15 @@ from __future__ import division
 from __future__ import print_function
 
 # stdlib imports
-import collections
 import numbers
 import re
 import sys
+
+try:
+    import collections.abc as abcs
+except ImportError: # pragma: no cover
+    # Python 2
+    import collections as abcs
 
 from six import reraise
 from six import string_types
@@ -81,9 +86,6 @@ FrozenSet = FrozenSet
 Set = Set
 Iterable = Iterable
 
-# The bind() method in the superclass takes an argument of "object", but
-# that redefines a builtin
-# pylint:disable=arguments-differ
 
 def _do_set(self, context, value, cls, factory):
     try:
@@ -333,15 +335,18 @@ class Variant(FieldValidationMixin, schema.Field):
         finally:
             del exc_info
 
+    _EVENT_TYPES = (
+        (string_types, BeforeTextAssignedEvent),
+        (abcs.Mapping, BeforeDictAssignedEvent),
+        (abcs.Sequence, BeforeSequenceAssignedEvent),
+        (object, BeforeObjectAssignedEvent)
+    )
+
     def set(self, context, value):
         # Try to determine the most appropriate event to fire
         # Order matters. It would kind of be nice to direct this to the appropriate
         # field itself, but that's sort of hard.
-        types = ((string_types, BeforeTextAssignedEvent),
-                 (collections.Mapping, BeforeDictAssignedEvent),
-                 (collections.Sequence, BeforeSequenceAssignedEvent),
-                 (object, BeforeObjectAssignedEvent))
-        for kind, factory in types:
+        for kind, factory in self._EVENT_TYPES:
             if isinstance(value, kind):
                 _do_set(self, context, value, Variant, factory)
                 return
