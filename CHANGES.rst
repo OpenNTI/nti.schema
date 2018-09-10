@@ -3,7 +3,7 @@
 =========
 
 
-1.4.2 (unreleased)
+1.4.2 (2018-09-10)
 ==================
 
 - Fix the ``repr`` of ``nti.schema.interfaces.InvalidValue``. See
