@@ -48,3 +48,8 @@ class TestInvalidValue(unittest.TestCase):
     def test_instance(self):
         v = InvalidValue()
         assert_that(v, is_(instance_of(InvalidValue)))
+
+
+    def test_repr(self):
+        assert_that(repr(InvalidValue('foo')),
+                    is_("InvalidValue('foo')"))

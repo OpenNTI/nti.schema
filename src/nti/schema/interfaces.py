@@ -155,7 +155,7 @@ class InvalidValue(sch_interfaces.InvalidValue):
         value = kwargs.pop('value', None)
         if kwargs:
             raise TypeError("Too many kwargs for function InvalidValue")
-        super(InvalidValue, self).__init__(self, *args)
+        super(InvalidValue, self).__init__(*args)
         self.with_field_and_value(field, value)
 
 deprecated('InvalidValue',
