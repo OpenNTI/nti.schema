@@ -9,6 +9,8 @@
 - Fix the ``repr`` of ``nti.schema.interfaces.InvalidValue``. See
   `issue 26 <https://github.com/NextThought/nti.schema/issues/26>`_.
 
+- ``nti.schema.jsonschema`` turns more abstract field types into
+  concrete types. See `issue 29 <https://github.com/NextThought/nti.schema/issues/29>`_.
 
 1.4.1 (2018-09-10)
 ==================

@@ -14,6 +14,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+try:
+    from collections.abc import Sequence
+except ImportError: # pragma: no cover
+    # Python 2
+    from collections import Sequence
+
 from six import integer_types
 from six import string_types
 from zope.interface.interfaces import IMethod
@@ -76,6 +82,8 @@ def get_ui_types_from_field(field):
             ui_type = 'int'
         elif all((issubclass(x, float) for x in _type)):
             ui_type = 'float'
+        elif all((issubclass(x, Sequence) for x in _type)):
+            ui_type = 'list'
     else:
         ui_type = get_ui_type_from_field_interface(field)
 
@@ -90,9 +98,13 @@ def get_ui_types_from_field(field):
         else:
             ui_type = 'string'
             ui_base_type = 'string'
-    elif ui_type in ('Number', 'float'):
+    elif ui_type in ('Sequence', 'MutableSequence'):
+        ui_type = 'list'
+    elif ui_type in ('Mapping', 'MutableMapping'):
+        ui_type = 'dict'
+    elif ui_type in ('Number', 'float', 'Decimal', 'Complex', 'Real', 'Rational'):
         ui_base_type = 'float'
-    elif ui_type in ('int', 'long'):
+    elif ui_type in ('int', 'long', 'Integral'):
         ui_base_type = 'int'
     elif ui_type in ('bool',):
         ui_base_type = 'bool'

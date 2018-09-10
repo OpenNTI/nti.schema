@@ -16,6 +16,22 @@ from zope.interface import Attribute
 
 from .. import jsonschema
 from ..field import DecodingValidTextLine
+from ..field import ListOrTuple
+from ..field import Dict
+from ..field import List
+from ..field import Real
+from ..field import Rational
+from ..field import Complex
+from ..field import Integral
+
+# ABCs
+from ..field import Sequence
+from ..field import IndexedIterable
+from ..field import MutableSequence
+
+from ..field import Mapping
+from ..field import MutableMapping
+
 
 from hamcrest import assert_that
 from hamcrest import has_entry
@@ -63,9 +79,11 @@ class TestJsonSchemafier(unittest.TestCase):
 
     def test_type_from_types(self):
 
-        def _assert_type(t, name='field'):
+        def _assert_type(t, name='field', base_type=None):
             schema = jsonschema.JsonSchemafier(IA).make_schema()
             assert_that(schema, has_entry(name, has_entry('type', t)))
+            if base_type:
+                assert_that(schema, has_entry(name, has_entry('base_type', base_type)))
             return schema
 
         class IA(Interface):
@@ -73,6 +91,20 @@ class TestJsonSchemafier(unittest.TestCase):
             field = Attribute("A field")
 
             field2 = DecodingValidTextLine()
+
+            list_field = List()
+            list_or_tuple_field = ListOrTuple()
+            dict_field = Dict()
+            mapping_field = Mapping()
+            mmapping_field = MutableMapping()
+            sequence_field = Sequence()
+            msequence_field = MutableSequence()
+            iiterable_field = IndexedIterable()
+
+            real_field = Real()
+            rational_field = Rational()
+            complex_field = Complex()
+            integral_field = Integral()
 
         IA['field']._type = str
         _assert_type('string')
@@ -98,3 +130,18 @@ class TestJsonSchemafier(unittest.TestCase):
 
         schema = _assert_type('string', 'field2')
         assert_that(schema, has_entry('field2', has_entry('base_type', 'string')))
+
+        _assert_type('list', 'list_field')
+        _assert_type('list', 'list_or_tuple_field')
+        _assert_type('list', 'sequence_field')
+        _assert_type('list', 'msequence_field')
+        _assert_type('list', 'iiterable_field')
+
+        _assert_type('dict', 'dict_field')
+        _assert_type('dict', 'mapping_field')
+        _assert_type('dict', 'mmapping_field')
+
+        _assert_type('Real', 'real_field', 'float')
+        _assert_type('Rational', 'rational_field', 'float')
+        _assert_type('Complex', 'complex_field', 'float')
+        _assert_type('Integral', 'integral_field', 'int')
