@@ -29,6 +29,7 @@ from six import reraise
 from six import string_types
 from zope import interface
 from zope import schema
+from zope.deferredimport import deprecatedFrom
 from zope.event import notify
 import zope.interface.common.idatetime
 
@@ -62,29 +63,61 @@ from nti.schema.interfaces import IFromObject
 from nti.schema.interfaces import IListOrTuple
 from nti.schema.interfaces import IVariant
 
-from .schema import SchemaConfigured
 
 __docformat__ = "restructuredtext en"
 
 # Re-export some things as part of our public API so we can
 # later re-implement them locally if needed
+__all__ = [
+    'Bool',
+    'Choice',
+    'Date',
+    'Datetime',
+    'Decimal',
+    'DecodingValidTextLine',
+    'Dict',
+    'DictFromObject',
+    'FieldValidationMixin',
+    'Float',
+    'FrozenSet',
+    'HTTPURL',
+    'IndexedIterable',
+    'Int',
+    'Iterable',
+    'List',
+    'ListOrTuple',
+    'ListOrTupleFromObject',
+    'Number',
+    'Object',
+    'ObjectLen',
+    'Set',
+    'Text',
+    'TextLine',
+    'Timedelta',
+    'Tuple',
+    'TupleFromObject',
+    'UniqueIterable',
+    'ValidBytes',
+    'ValidBytesLine',
+    'ValidChoice',
+    'ValidDatetime',
+    'ValidRegEx',
+    'ValidRegularExpression',
+    'ValidSet',
+    'ValidText',
+    'ValidTextLine',
+    'ValidURI',
+    'Variant',
+]
 
-SchemaConfigured = SchemaConfigured
-Bool = Bool
-Date = Date
-Datetime = Datetime
+# BWC alias, not in __all__
 DateTime = Datetime
-Decimal = Decimal
-Dict = Dict
-List = List
-Text = Text
-TextLine = TextLine
-Timedelta = Timedelta
-Choice = Choice
-Tuple = Tuple
-FrozenSet = FrozenSet
-Set = Set
-Iterable = Iterable
+
+deprecatedFrom(
+    "Moved to nti.schema.schema",
+    "nti.schema.schema",
+    'SchemaConfigured',
+)
 
 
 def _do_set(self, context, value, cls, factory):

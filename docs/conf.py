@@ -364,4 +364,3 @@ extlinks = {'issue': ('https://github.com/NextThought/nti.schema/issues/%s',
                    'pull request #')}
 
 autodoc_default_flags = ['members', 'show-inheritance']
-autodoc_member_order = 'bysource'
