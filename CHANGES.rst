@@ -3,7 +3,7 @@
 =========
 
 
-1.4.0 (unreleased)
+1.4.0 (2018-09-10)
 ==================
 
 - Drop support for ``dm.zope.schema`` fields, in particular the
