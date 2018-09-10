@@ -3,7 +3,7 @@
 =========
 
 
-1.4.1 (unreleased)
+1.4.1 (2018-09-10)
 ==================
 
 - Make ``nti.schema.interfaces.InvalidValue`` a class again. It is
