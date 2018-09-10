@@ -6,7 +6,8 @@
 1.4.1 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Make ``nti.schema.interfaces.InvalidValue`` a class again. It is
+  deprecated. See `issue 24 <https://github.com/NextThought/nti.schema/issues/24>`_.
 
 
 1.4.0 (2018-09-10)

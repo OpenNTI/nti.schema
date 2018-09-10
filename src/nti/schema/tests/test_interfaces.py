@@ -20,6 +20,8 @@ with Suppressor():
 from hamcrest import assert_that
 from hamcrest import has_property
 from hamcrest import none
+from hamcrest import is_
+from hamcrest import instance_of
 
 __docformat__ = "restructuredtext en"
 
@@ -39,3 +41,10 @@ class TestInvalidValue(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             InvalidValue(value=1, field=2, other=3)
+
+    def test_subclass(self):
+        type('subclass', (InvalidValue,), {})
+
+    def test_instance(self):
+        v = InvalidValue()
+        assert_that(v, is_(instance_of(InvalidValue)))

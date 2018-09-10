@@ -135,7 +135,7 @@ class BeforeDictAssignedEvent(BeforeSchemaFieldAssignedEvent):
 
 BeforeObjectAssignedEvent = BeforeObjectAssignedEvent
 
-def InvalidValue(*args, **kwargs):
+class InvalidValue(sch_interfaces.InvalidValue):
     """
     InvalidValue(*args, field=None, value=None)
 
@@ -145,17 +145,18 @@ def InvalidValue(*args, **kwargs):
        This is now just a convenience wrapper around
        :class:`zope.schema.interfaces.InvalidValue` that calls
        :meth:`.zope.schema.interfaces.ValidationError.with_field_and_value`
-       before returning the exception.
+       before returning the exception. You should always catch
+       :class:`zope.schema.interfaces.InvalidValue`.
     """
     # We can't write the syntax we want to in Python 2.
 
-    field = kwargs.pop('field', None)
-    value = kwargs.pop('value', None)
-    if kwargs:
-        raise TypeError("Too many kwargs for function InvalidValue")
-    return sch_interfaces.InvalidValue(*args).with_field_and_value(
-        field, value
-    )
+    def __init__(self, *args, **kwargs):
+        field = kwargs.pop('field', None)
+        value = kwargs.pop('value', None)
+        if kwargs:
+            raise TypeError("Too many kwargs for function InvalidValue")
+        super(InvalidValue, self).__init__(self, *args)
+        self.with_field_and_value(field, value)
 
 deprecated('InvalidValue',
            "Use zope.schema.interfaces.InvalidValue.with_field_and_value.")
