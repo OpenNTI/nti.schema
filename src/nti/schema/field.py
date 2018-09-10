@@ -15,15 +15,21 @@ from __future__ import division
 from __future__ import print_function
 
 # stdlib imports
-import collections
 import numbers
 import re
 import sys
+
+try:
+    import collections.abc as abcs
+except ImportError: # pragma: no cover
+    # Python 2
+    import collections as abcs
 
 from six import reraise
 from six import string_types
 from zope import interface
 from zope import schema
+from zope.deferredimport import deprecatedFrom
 from zope.event import notify
 import zope.interface.common.idatetime
 
@@ -57,33 +63,62 @@ from nti.schema.interfaces import IFromObject
 from nti.schema.interfaces import IListOrTuple
 from nti.schema.interfaces import IVariant
 
-from .schema import SchemaConfigured
 
 __docformat__ = "restructuredtext en"
 
 # Re-export some things as part of our public API so we can
 # later re-implement them locally if needed
+__all__ = [
+    'Bool',
+    'Choice',
+    'Date',
+    'Datetime',
+    'Decimal',
+    'DecodingValidTextLine',
+    'Dict',
+    'DictFromObject',
+    'FieldValidationMixin',
+    'Float',
+    'FrozenSet',
+    'HTTPURL',
+    'IndexedIterable',
+    'Int',
+    'Iterable',
+    'List',
+    'ListOrTuple',
+    'ListOrTupleFromObject',
+    'Number',
+    'Object',
+    'ObjectLen',
+    'Set',
+    'Text',
+    'TextLine',
+    'Timedelta',
+    'Tuple',
+    'TupleFromObject',
+    'UniqueIterable',
+    'ValidBytes',
+    'ValidBytesLine',
+    'ValidChoice',
+    'ValidDatetime',
+    'ValidRegEx',
+    'ValidRegularExpression',
+    'ValidSet',
+    'ValidText',
+    'ValidTextLine',
+    'ValidURI',
+    'Variant',
+]
 
-SchemaConfigured = SchemaConfigured
-Bool = Bool
-Date = Date
-Datetime = Datetime
+# BWC alias, not in __all__
 DateTime = Datetime
-Decimal = Decimal
-Dict = Dict
-List = List
-Text = Text
-TextLine = TextLine
-Timedelta = Timedelta
-Choice = Choice
-Tuple = Tuple
-FrozenSet = FrozenSet
-Set = Set
-Iterable = Iterable
 
-# The bind() method in the superclass takes an argument of "object", but
-# that redefines a builtin
-# pylint:disable=arguments-differ
+deprecatedFrom(
+    "Moved to nti.schema.schema",
+    "nti.schema.schema",
+    'SchemaConfigured',
+)
+
 
 def _do_set(self, context, value, cls, factory):
     try:
@@ -333,15 +368,18 @@ class Variant(FieldValidationMixin, schema.Field):
         finally:
             del exc_info
 
+    _EVENT_TYPES = (
+        (string_types, BeforeTextAssignedEvent),
+        (abcs.Mapping, BeforeDictAssignedEvent),
+        (abcs.Sequence, BeforeSequenceAssignedEvent),
+        (object, BeforeObjectAssignedEvent)
+    )
+
     def set(self, context, value):
         # Try to determine the most appropriate event to fire
         # Order matters. It would kind of be nice to direct this to the appropriate
         # field itself, but that's sort of hard.
-        types = ((string_types, BeforeTextAssignedEvent),
-                 (collections.Mapping, BeforeDictAssignedEvent),
-                 (collections.Sequence, BeforeSequenceAssignedEvent),
-                 (object, BeforeObjectAssignedEvent))
-        for kind, factory in types:
+        for kind, factory in self._EVENT_TYPES:
             if isinstance(value, kind):
                 _do_set(self, context, value, Variant, factory)
                 return

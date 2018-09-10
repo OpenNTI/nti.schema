@@ -4,3 +4,4 @@
 
 .. automodule:: nti.schema.field
     :members:
+    :imported-members:

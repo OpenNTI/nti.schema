@@ -10,9 +10,11 @@
   ``Object`` field. The validation performed by ``zope.schema.Object``
   is much improved.
 
-- Drop support for ``zope.schema`` older than 4.6.0.
+- Drop support for ``zope.schema`` older than 4.6.1.
 
 - Deprecate ``nti.schema.field.Number``.
+
+- Add support for Python 3.7.
 
 1.3.3 (2018-09-07)
 ==================
