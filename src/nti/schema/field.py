@@ -42,12 +42,21 @@ from zope.schema import Dict
 from zope.schema import FrozenSet
 from zope.schema import Iterable
 from zope.schema import List
+from zope.schema import Mapping
+from zope.schema import MutableMapping
+from zope.schema import MutableSequence
+from zope.schema import Sequence
 from zope.schema import Set
 from zope.schema import Text
 from zope.schema import TextLine
 from zope.schema import Timedelta
 from zope.schema import Tuple
 from zope.schema import Object as _ObjectBase
+
+from zope.schema import Complex
+from zope.schema import Real
+from zope.schema import Rational
+from zope.schema import Integral
 
 from zope.schema import interfaces as sch_interfaces
 
@@ -71,6 +80,7 @@ __docformat__ = "restructuredtext en"
 __all__ = [
     'Bool',
     'Choice',
+    'Complex',
     'Date',
     'Datetime',
     'Decimal',
@@ -83,14 +93,21 @@ __all__ = [
     'HTTPURL',
     'IndexedIterable',
     'Int',
+    'Integral',
     'Iterable',
     'List',
     'ListOrTuple',
     'ListOrTupleFromObject',
+    'Mapping',
+    'MutableMapping',
+    'MutableSequence',
     'Number',
     'Object',
     'ObjectLen',
+    'Rational',
+    'Real',
     'Set',
+    'Sequence',
     'Text',
     'TextLine',
     'Timedelta',
