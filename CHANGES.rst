@@ -6,7 +6,8 @@
 1.4.2 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Fix the ``repr`` of ``nti.schema.interfaces.InvalidValue``. See
+  `issue 26 <https://github.com/NextThought/nti.schema/issues/26>`_.
 
 
 1.4.1 (2018-09-10)
