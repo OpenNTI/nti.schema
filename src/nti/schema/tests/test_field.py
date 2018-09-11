@@ -350,6 +350,10 @@ class TestFieldValidationMixin(unittest.TestCase):
         field.__name__ = 'foo'
 
         ex = SchemaNotProvided('msg').with_field_and_value(field, 'value')
+        # zope.schema 4.7 automatically fills in args
+        assert_that(ex.args, is_(('msg', None)))
+        assert_that(ex.schema, is_('msg'))
+        ex.args = ('msg',)
         try:
             field._reraise_validation_error(ex, 'value', _raise=True)
         except SchemaNotProvided:
@@ -360,10 +364,42 @@ class TestFieldValidationMixin(unittest.TestCase):
         field.__name__ = 'foo'
 
         ex = SchemaNotProvided().with_field_and_value(field, 'value')
+        # zope.schema 4.7 automatically fills in args
+        assert_that(ex.args, is_((None, None)))
+        ex.args = ()
         try:
             field._reraise_validation_error(ex, 'value', _raise=True)
         except SchemaNotProvided:
             assert_that(ex.args, is_(('value', '', 'foo')))
+
+    def test_oob(self):
+        from zope.schema import Integral
+        from zope.schema.interfaces import OutOfBounds
+        class Field(FieldValidationMixin, Integral):
+            pass
+
+        field = Field(min=1)
+        with self.assertRaises(OutOfBounds):
+            field.validate(0)
+
+    def test_random_validation_error(self):
+        from zope.schema.interfaces import ValidationError
+
+        class Field(object):
+            __name__ = ''
+            def _validate(self, v):
+                raise ValidationError().with_field_and_value(self, v)
+
+        class Field2(FieldValidationMixin, Field):
+            pass
+
+        field = Field2()
+        with self.assertRaises(ValidationError) as exc:
+            field._validate(42)
+
+        ex = exc.exception
+        assert_that(ex.args, is_((42, '', '')))
+
 
 class TestRegex(unittest.TestCase):
 
@@ -409,20 +445,16 @@ class TestDictFromObject(unittest.TestCase):
 
     def test_accepts_mapping(self):
         from six.moves import UserDict
-
-        try:
-            from collections.abc import Mapping
-        except ImportError:
-            from collections import Mapping
+        from nti.schema.field import abcs
 
         # On Python 2, UserDict is not registered as a Mapping.
-        if not issubclass(UserDict, Mapping):
-            Mapping.register(UserDict)
+        if not issubclass(UserDict, abcs.Mapping): # pragma: no cover
+            abcs.Mapping.register(UserDict)
 
         field = self._makeOne(key_type=Int(), value_type=Float())
 
         value = UserDict({'1': '42'})
-        assert_that(value, is_(Mapping))
+        assert_that(value, is_(abcs.Mapping))
         assert_that(value, is_not(dict))
 
         result = field.fromObject(value)

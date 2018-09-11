@@ -2,7 +2,7 @@
 import codecs
 from setuptools import setup, find_packages
 
-version = '1.4.3.dev0'
+version = '1.5.0.dev0'
 
 entry_points = {
 }
@@ -53,7 +53,7 @@ setup(
         'six',
         'setuptools',
         'zope.event',
-        'zope.schema >= 4.6.1',
+        'zope.schema >= 4.7.0',
         'zope.i18n',
         'zope.i18nmessageid',
         'zope.vocabularyregistry',

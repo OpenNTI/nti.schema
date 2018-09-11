@@ -3,10 +3,10 @@
 =========
 
 
-1.4.3 (unreleased)
+1.5.0 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Add support for zope.schema 4.7.0; drop support for older versions.
 
 
 1.4.2 (2018-09-10)
