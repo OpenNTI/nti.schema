@@ -188,38 +188,60 @@ class FieldValidationMixin(object):
     def _reraise_validation_error(self, e, value, _raise=False):
         # This must be called inside a try/except with an active exception.
         assert e.field is not None, "A _validate method failed to use ex.with_field_and_value()"
-
+        # As-of zope.schema 4.7.0, this is largely obsolete.
+        # Arguments are provided; we stop calling this in many cases.
         if len(e.args) == 1:  # typically the message is the only thing
             self._fixup_validation_error_args(e, value)
-        elif not e.args:  # Typically a SchemaNotProvided. Grr.
+        elif not e.args:
             self._fixup_validation_error_no_args(e, value)
-        elif isinstance(e, sch_interfaces.TooShort) and len(e.args) == 2:
-            # Note we're capitalizing the field in the message.
-            e.i18n_message = _(
-                u'${field} is too short. Please use at least ${minLength} characters.',
-                mapping={'field': self.__fixup_name__.capitalize(),
-                         'minLength': e.args[1]})
-            e.args = (self.__fixup_name__.capitalize() + ' is too short.',
-                      self.__fixup_name__,
-                      value)
-        elif isinstance(e, sch_interfaces.TooLong) and len(e.args) == 2:
-            e.i18n_message = _(u'${field} is too long. ${max_size} character limit.',
-                               mapping={'field': self.__fixup_name__.capitalize(),
-                                        'max_size': e.args[1]})
-            e.args = (self.__fixup_name__.capitalize() + ' is too long.',
-                      self.__fixup_name__,
-                      value)
         if _raise:
             raise e
         raise # pylint:disable=misplaced-bare-raise
 
+    def _fixup_too_short(self, e, value):
+        # Note we're capitalizing the field in the message.
+        e.i18n_message = _(
+            u'${field} is too short. Please use at least ${minLength} characters.',
+            mapping={'field': self.__fixup_name__.capitalize(),
+                     'minLength': e.bound}
+        )
+        e.args = (self.__fixup_name__.capitalize() + ' is too short.',
+                  self.__fixup_name__,
+                  value)
+
+    def _fixup_too_long(self, e, value):
+        e.i18n_message = _(
+            u'${field} is too long. ${max_size} character limit.',
+            mapping={'field': self.__fixup_name__.capitalize(),
+                     'max_size': e.bound}
+        )
+        e.args = (self.__fixup_name__.capitalize() + ' is too long.',
+                  self.__fixup_name__,
+                  value)
+
     def _validate(self, value):
         try:
             super(FieldValidationMixin, self)._validate(value)
+        except sch_interfaces.WrongType as e:
+            assert e.expected_type is not None, "The expected_type should be provided"
+            raise
         except sch_interfaces.WrongContainedType:
+            raise
+        except sch_interfaces.TooShort as e:
+            self._fixup_too_short(e, value)
+            raise
+        except sch_interfaces.TooLong as e:
+            self._fixup_too_long(e, value)
+            raise
+        except sch_interfaces.SchemaNotProvided as e:
+            assert e.schema is not None, "The schema should be provided"
+            raise
+        except sch_interfaces.OutOfBounds as e:
+            assert e.bound is not None, "The bound should be provided"
             raise
         except sch_interfaces.ValidationError as e:
             self._reraise_validation_error(e, value)
+
 
 @interface.implementer(sch_interfaces.IObject)
 class ValidDatetime(FieldValidationMixin, Datetime):

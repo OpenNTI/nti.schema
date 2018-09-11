@@ -58,15 +58,8 @@ def schemadict(spec):
     """The schema part of interface specification *spec* as a ``dict``."""
     return dict(schemaitems(spec))
 
-_iteritems = dict.items
-_hasattr = hasattr
-if hasattr(dict, 'iteritems'):
-    _iteritems = dict.iteritems # pylint:disable=no-member
-    _marker = object()
-    # The point of this is to avoid hiding exceptions (which the builtin
-    # hasattr() does on Python 2)
-    def _hasattr(o, name): # pylint:disable=function-redefined
-        return getattr(o, name, _marker) is not _marker
+
+_marker = object()
 
 
 @interface.implementer(ISchemaConfigured)
@@ -75,14 +68,16 @@ class SchemaConfigured(object):
 
     def __init__(self, **kw):
         schema = schemadict(self.sc_schema_spec())
-        for k, v in _iteritems(kw):
+        for k, v in kw.items():
             # might want to control this check
             if k not in schema:
                 raise TypeError('non schema keyword argument: %s' % k)
             setattr(self, k, v)
         # provide default values for schema fields not set
-        for f, fields in _iteritems(schema):
-            if not _hasattr(self, f):
+        for f, fields in schema.items():
+            if getattr(self, f, _marker) is _marker:
+                # The point of this is to avoid hiding exceptions (which the builtin
+                # hasattr() does on Python 2)
                 setattr(self, f, fields.default)
 
     # provide control over which interfaces define the data schema
