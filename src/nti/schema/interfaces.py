@@ -45,7 +45,8 @@ class IBeforeSchemaFieldAssignedEvent(Interface):
     context = Attribute(u"The context object where the object will be assigned to.")
 
 # Make this a base of the zope interface so our handlers
-# are compatible
+# are compatible. This is dangerous if any lookups or registrations have already been done,
+# as zope.interface maintains a cache of these things.
 sch_interfaces.IBeforeObjectAssignedEvent.__bases__ = (IBeforeSchemaFieldAssignedEvent,)
 
 @implementer(IBeforeSchemaFieldAssignedEvent)
@@ -135,28 +136,30 @@ class BeforeDictAssignedEvent(BeforeSchemaFieldAssignedEvent):
 
 BeforeObjectAssignedEvent = BeforeObjectAssignedEvent
 
-class InvalidValue(sch_interfaces.InvalidValue):
-    """
-    InvalidValue(*args, field=None, value=None)
 
-    Adds a field specifically to carry the value that is invalid.
+# Set up the alias for InvalidValue. We need to use an alias so that
+# try/except and subclass works as expected. The unfortunate side
+# effect is that to preserve the constructor we need to swizzle the
+# __init__ of sch_interfaces.InvalidValue (the swizzling is harmless;
+# in zope.schema 4.7, InvalidValue inherits the Exception constructor,
+# which forbids any kwargs but allows arbitrary *args; we keep that
+# behaviour). This is deprecated and will be removed in the future.
+InvalidValue = sch_interfaces.InvalidValue
 
-    .. deprecated:: 1.4.0
-       This is now just a convenience wrapper around
-       :class:`zope.schema.interfaces.InvalidValue` that calls
-       :meth:`.zope.schema.interfaces.ValidationError.with_field_and_value`
-       before returning the exception. You should always catch
-       :class:`zope.schema.interfaces.InvalidValue`.
-    """
-    # We can't write the syntax we want to in Python 2.
-
-    def __init__(self, *args, **kwargs):
-        field = kwargs.pop('field', None)
-        value = kwargs.pop('value', None)
-        if kwargs:
-            raise TypeError("Too many kwargs for function InvalidValue")
-        super(InvalidValue, self).__init__(*args)
+def _InvalidValue__init__(self, *args, **kwargs):
+    field = kwargs.pop('field', None)
+    value = kwargs.pop('value', None)
+    if kwargs:
+        raise TypeError("Too many kwargs for function InvalidValue")
+    # like normal
+    sch_interfaces.ValidationError.__init__(self, *args)
+    if field is not None or value is not None:
         self.with_field_and_value(field, value)
+
+
+sch_interfaces.InvalidValue.__init__ = _InvalidValue__init__
+
+del _InvalidValue__init__
 
 deprecated('InvalidValue',
            "Use zope.schema.interfaces.InvalidValue.with_field_and_value.")
