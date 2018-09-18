@@ -6,7 +6,9 @@
 1.5.1 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Adjust the deprecated ``zope.schema.interfaces.InvalidValue`` to be
+  a simple alias for ``zope.schema.interfaces.InvalidValue`` (while
+  preserving the constructor) for improved backwards compatibility.
 
 
 1.5.0 (2018-09-11)

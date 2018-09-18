@@ -43,13 +43,29 @@ class TestInvalidValue(unittest.TestCase):
             InvalidValue(value=1, field=2, other=3)
 
     def test_subclass(self):
-        type('subclass', (InvalidValue,), {})
+        kind = type('subclass', (InvalidValue,), {})
+        self.test_instance(kind)
+        self.test_raise_except(kind)
 
-    def test_instance(self):
-        v = InvalidValue()
-        assert_that(v, is_(instance_of(InvalidValue)))
+    def test_instance(self, kind=InvalidValue):
+        from zope.schema import interfaces as sch_interfaces
+        v = kind()
+        self.assertIsInstance(v, sch_interfaces.InvalidValue)
+        self.assertIsInstance(v, InvalidValue)
 
+    def test_raise_except(self, kind=InvalidValue):
+        # It can be caught by its own name
+        with self.assertRaises(kind):
+            raise kind()
+        # It can be caught by the zope.schema name
+        from zope.schema import interfaces as sch_interfaces
+        with self.assertRaises(sch_interfaces.InvalidValue):
+            raise InvalidValue()
 
     def test_repr(self):
         assert_that(repr(InvalidValue('foo')),
                     is_("InvalidValue('foo')"))
+
+    def test_alias(self):
+        from zope.schema import interfaces as sch_interfaces
+        self.assertIs(InvalidValue, sch_interfaces.InvalidValue)
