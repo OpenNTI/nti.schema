@@ -3,7 +3,7 @@
 =========
 
 
-1.5.1 (unreleased)
+1.6.0 (2018-09-18)
 ==================
 
 - Adjust the deprecated ``zope.schema.interfaces.InvalidValue`` to be
