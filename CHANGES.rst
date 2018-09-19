@@ -3,7 +3,7 @@
 =========
 
 
-1.7.0 (unreleased)
+1.7.0 (2018-09-19)
 ==================
 
 - Add support for ``IFromBytes`` in zope.schema 4.8.0.
