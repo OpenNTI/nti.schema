@@ -27,11 +27,17 @@ except ImportError: # pragma: no cover
 
 from six import reraise
 from six import string_types
+from six import text_type
 from zope import interface
 from zope import schema
 from zope.deferredimport import deprecatedFrom
 from zope.event import notify
 import zope.interface.common.idatetime
+from zope.cachedescriptors.property import Lazy
+
+from zope.schema import interfaces as sch_interfaces
+from zope.schema.interfaces import IFromBytes
+from zope.schema.interfaces import IFromUnicode
 
 from zope.schema import Bool
 from zope.schema import Choice
@@ -58,7 +64,7 @@ from zope.schema import Real
 from zope.schema import Rational
 from zope.schema import Integral
 
-from zope.schema import interfaces as sch_interfaces
+
 
 from nti.schema import MessageFactory as _
 from nti.schema.interfaces import BeforeDictAssignedEvent
@@ -159,6 +165,21 @@ def __with_set(eventfactory=BeforeSchemaFieldAssignedEvent):
         __make_set(cls, eventfactory)
         return cls
     return X
+
+def _fixup_Object_field(field):
+    if not IFromObject.providedBy(field) and isinstance(field, _ObjectBase):
+        # An object field can do this with a tiny bit of help.
+        def _object_fromObject(value):
+            if not field.schema.providedBy(value):
+                # Allow the TypeError or LookupError to propagate,
+                # signalling nti.externalization that it doesn't need to
+                # try to adapt again.
+                value = field.schema(value)
+            field.validate(value)
+            return value
+        field.fromObject = _object_fromObject
+        interface.alsoProvides(field, IFromObject)
+    return field
 
 
 class FieldValidationMixin(object):
@@ -275,6 +296,52 @@ class Object(FieldValidationMixin, _ObjectBase):
     Improved ``zope.schema.Object``.
     """
 
+class _FieldConverter(object):
+
+    def __init__(self, field):
+        self.field = field
+
+    @Lazy
+    def fromObject(self):
+        return getattr(self.field, 'fromObject', None)
+
+    @Lazy
+    def fromUnicode(self):
+        return getattr(self.field, 'fromUnicode', None)
+
+    @Lazy
+    def fromBytes(self):
+        return getattr(self.field, 'fromBytes', None)
+
+    def __call__(self, value):
+        # pylint:disable=too-many-function-args
+
+        # Take make it easier on implementers of fromObject,
+        # if the also implement fromBytes/fromUnicode, we call those
+        # first.
+        if self.fromBytes is not None and isinstance(value, bytes):
+            return self.fromBytes(value)
+
+        if self.fromUnicode is not None and isinstance(value, text_type):
+            # Hoping for strings at this point.
+            # for BWC, we always call this method.
+            return self.fromUnicode(value)
+
+        if self.fromObject is not None:
+            return self.fromObject(value)
+
+        if self.fromUnicode is not None:
+            # Hoping for strings at this point.
+            # for BWC, we always call this method.
+            return self.fromUnicode(value)
+
+        raise sch_interfaces.WrongType(
+            value,
+            getattr(self.field, '_type', None), # pylint:disable=protected-access
+            getattr(self.field, '__name__', None),
+        ).with_field_and_value(self.field, value)
+
+
 
 @interface.implementer(IVariant)
 class Variant(FieldValidationMixin, schema.Field):
@@ -301,7 +368,7 @@ class Variant(FieldValidationMixin, schema.Field):
 
         # assign our children first so anything we copy to them as a result of the super
         # constructor (__name__) gets set
-        self.fields = list(fields)
+        self.fields = [_fixup_Object_field(field) for field in fields]
         for f in self.fields:
             f.__parent__ = self
 
@@ -367,19 +434,7 @@ class Variant(FieldValidationMixin, schema.Field):
 
         for field in self.fields:
             try:
-                # Three possible ways to convert: adapting the schema of an IObject,
-                # using a nested field that is IFromObject, or an IFromUnicode if the object
-                # is a string.
-
-                converter = None
-                # Most common to least common
-                if sch_interfaces.IObject.providedBy(field):
-                    converter = field.schema
-                elif (sch_interfaces.IFromUnicode.providedBy(field)
-                      and isinstance(obj, string_types)):
-                    converter = field.fromUnicode
-                elif IFromObject.providedBy(field):
-                    converter = field.fromObject
+                converter = _FieldConverter(field)
 
                 # Try to convert and validate
                 adapted = converter(obj)
@@ -495,6 +550,7 @@ class ValidTextLine(FieldValidationMixin, schema.TextLine):
     mechanism does not.
     """
 
+@interface.implementer(sch_interfaces.IFromBytes)
 class DecodingValidTextLine(ValidTextLine):
     """
     A text type that will attempt to decode non-unicode
@@ -510,6 +566,9 @@ class DecodingValidTextLine(ValidTextLine):
         return value # tests
 
     # fromUnicode calls validate, so no need to duplicate
+
+    def fromBytes(self, value):
+        return self.fromUnicode(value.decode('utf-8'))
 
 class ValidRegularExpression(ValidTextLine):
 
@@ -601,16 +660,28 @@ class ListOrTuple(IndexedIterable):
     "Restrict sequence values specifically to list and tuple."
     _type = (list, tuple)
 
+
+
+@interface.implementer(IFromObject)
 class _SequenceFromObjectMixin(object):
     accept_types = None
     _default_type = list
 
+    def __init__(self, *args, **kwargs):
+        super(_SequenceFromObjectMixin, self).__init__(*args, **kwargs)
+        self._validate_contained_field(self.value_type)
+
+    def _validate_contained_field(self, field):
+        field = _fixup_Object_field(field)
+        # We allow None for a value type
+        if field is not None and not any(
+                (iface.providedBy(field)
+                 for iface in (IFromObject, IFromUnicode, IFromBytes))
+        ):
+            raise sch_interfaces.SchemaNotProvided(IFromObject, field)
+
     def _converter_for(self, field):
-        if hasattr(field, 'fromObject'):
-            converter = field.fromObject
-        elif hasattr(field, 'fromUnicode'):  # here's hoping the values are strings
-            converter = field.fromUnicode
-        return converter
+        return _FieldConverter(field)
 
     def _do_fromObject(self, context):
         converter = self._converter_for(self.value_type)
@@ -632,31 +703,29 @@ class _SequenceFromObjectMixin(object):
         return self._do_convert_result(result)
 
 
-@interface.implementer(IFromObject)
 class ListOrTupleFromObject(_SequenceFromObjectMixin, ListOrTuple):
     """
-    The field_type MUST be a :class:`Variant`, or more generally,
-    something supporting :class:`IFromObject` or :class:`IFromUnicode`
+    The ``value_type`` MUST be a :class:`Variant`, or more generally,
+    something supporting :class:`IFromObject`, :class:`IFromUnicode`
+    or :class:`IFromBytes`.
     """
 
-    def __init__(self, *args, **kwargs):
-        super(ListOrTupleFromObject, self).__init__(*args, **kwargs)
-        if not IFromObject.providedBy(self.value_type):
-            raise sch_interfaces.WrongType(self.value_type, IFromObject).with_field_and_value(
-                self, self.value_type)
 
-@interface.implementer(IFromObject)
 class TupleFromObject(_ValueTypeAddingDocMixin,
                       _SequenceFromObjectMixin,
                       FieldValidationMixin,
                       schema.Tuple):
     """
-    The field_type MUST be a :class:`Variant`, or more generally,
-    something supporting :class:`IFromObject`. When setting through this object,
-    we will automatically convert lists and only lists to tuples (for convenience coming
-    in through JSON)
+    The ``value_type`` MUST be a :class:`Variant`, or more generally,
+    something supporting :class:`IFromObject`, :class:`IFromUnicode`
+    or :class:`IFromBytes`.
+
+    When setting through this object, we will automatically convert
+    lists and only lists to tuples (for convenience coming in through
+    JSON)
     """
     accept_types = (list, tuple)
+
     def set(self, context, value):
         if isinstance(value, list):
             value = tuple(value)
@@ -668,7 +737,7 @@ class TupleFromObject(_ValueTypeAddingDocMixin,
             value = tuple(value)
         super(TupleFromObject, self).validate(value)
 
-@interface.implementer(IFromObject)
+
 @__with_set(BeforeDictAssignedEvent)
 class DictFromObject(_ValueTypeAddingDocMixin,
                      _SequenceFromObjectMixin,
@@ -676,13 +745,17 @@ class DictFromObject(_ValueTypeAddingDocMixin,
                      schema.Mapping):
     """
     The `key_type` and `value_type` must be supporting
-    :class:`IFromObject` or :class:`.IFromUnicode`.
+    :class:`IFromObject` or :class:`.IFromUnicode` or :class:`IFromBytes`
 
     .. versionchanged:: 1.4.0
        Subclass :class:`zope.schema.Mapping` instead of :class:`zope.schema.Dict`,
        allowing for any mapping (such as BTrees), not just dicts. However, the validated
        value is still a dict.
     """
+
+    def __init__(self, *args, **kwargs):
+        super(DictFromObject, self).__init__(*args, **kwargs)
+        self._validate_contained_field(self.key_type)
 
     def _do_convert_result(self, result):
         assert isinstance(result, dict)
@@ -693,9 +766,19 @@ class DictFromObject(_ValueTypeAddingDocMixin,
         value_converter = self._converter_for(self.value_type)
         return {key_converter(k): value_converter(v) for k, v in _iteritems(context)}
 
+
 @__with_set(BeforeSetAssignedEvent)
-class ValidSet(_ValueTypeAddingDocMixin, FieldValidationMixin, schema.Set):
-    pass
+class ValidSet(_ValueTypeAddingDocMixin,
+               _SequenceFromObjectMixin,
+               FieldValidationMixin,
+               schema.Set):
+    """
+    A set that is validated.
+
+    .. versionchanged:: 1.5.0
+       Implement :class:`IFromObject`.
+    """
+
 
 class UniqueIterable(ValidSet):
     """
@@ -703,6 +786,9 @@ class UniqueIterable(ValidSet):
     but one whose contents are unique. Use this when you can
     return a :class:`set`, :class:`frozenset` or empty tuple. These should be
     sequences that suport the ``in`` operator.
+
+    .. versionchanged:: 1.5.0
+       Implement :class:`IFromObject`.
     """
     _type = None  # Override to not force a set
 
@@ -718,3 +804,8 @@ class UniqueIterable(ValidSet):
         super(UniqueIterable, self).__init__(*args, **kwargs)
         if no_min_length:
             self.min_length = None
+
+    def _do_convert_result(self, result):
+        if not isinstance(result, (set, frozenset)):
+            result = set(result)
+        return result

@@ -44,6 +44,7 @@ from nti.schema.field import ValidTextLine as TextLine
 from nti.schema.interfaces import IBeforeDictAssignedEvent
 from nti.schema.interfaces import IBeforeSequenceAssignedEvent
 from nti.schema.interfaces import IVariant
+from nti.schema.interfaces import IFromObject
 # Import from the BWC location
 
 with warnings.catch_warnings():
@@ -257,11 +258,21 @@ class TestConfiguredVariant(unittest.TestCase):
         assert_that(events, has_length(1))
         assert_that(events, contains(has_property('object', {'k': 'v'})))
 
-class TestUniqueIterable(unittest.TestCase):
+class TestValidSet(unittest.TestCase):
+
+    def _getTargetClass(self):
+        from nti.schema.field import ValidSet
+        return ValidSet
+
+    def _makeOne(self):
+        return self._getTargetClass()()
+
+    default_min_length = 0
 
     def test_min_length(self):
-        field = UniqueIterable(__name__='foo')
-        assert_that(field, has_property('min_length', none()))
+        field = self._getTargetClass()(__name__='foo')
+        assert_that(field, has_property('min_length',
+                                        self.default_min_length))
 
         class Thing(object):
             foo = None
@@ -269,6 +280,24 @@ class TestUniqueIterable(unittest.TestCase):
         field.set(thing, ())
 
         assert_that(thing, has_property('foo', ()))
+
+    def test_value_type(self):
+        field = self._getTargetClass()(value_type=HTTPURL())
+
+        o = field.fromObject({'https://example.com'})
+        assert_that(o, is_({'https://example.com'}))
+
+    def test_interfaces(self):
+        assert_that(self._makeOne(),
+                    verifiably_provides(IFromObject))
+
+
+class TestUniqueIterable(TestValidSet):
+
+    def _getTargetClass(self):
+        return UniqueIterable
+
+    default_min_length = none()
 
 class TestTupleFromObject(unittest.TestCase):
 
@@ -308,9 +337,41 @@ class TestTupleFromObject(unittest.TestCase):
 
 class TestListOrTupleFromObject(unittest.TestCase):
 
-    def test_invalid_construct(self):
-        assert_that(calling(ListOrTupleFromObject).with_args(Object(IUnicode)),
-                    raises(WrongType))
+    def test_construct_with_object(self):
+        field = ListOrTupleFromObject(Object(IUnicode))
+
+        assert_that(field.value_type, verifiably_provides(IFromObject))
+
+        # And it tries to adapt individual fields
+        with self.assertRaises(TypeError) as exc:
+            field.fromObject((b'abc',))
+
+        exception = exc.exception
+        self.assertEqual(exception.args[0], 'Could not adapt')
+
+        class Conforms(object):
+
+            def __conform__(self, iface):
+                assert_that(iface, is_(IUnicode))
+                return u'def'
+
+        o = field.fromObject((Conforms(),))
+        assert_that(o, is_([u'def']))
+
+        # This works even when bound
+
+        field = field.bind(self)
+        assert_that(field.value_type, verifiably_provides(IFromObject))
+        o = field.fromObject((Conforms(),))
+        assert_that(o, is_([u'def']))
+
+    def test_construct_with_bad_field(self):
+
+        from zope.schema import Field
+
+        with self.assertRaises(SchemaNotProvided):
+            ListOrTupleFromObject(Field())
+
 
 class TestIndexedIterable(unittest.TestCase):
 
@@ -329,6 +390,14 @@ class TestDecodingValidTextLine(unittest.TestCase):
         field = DecodingValidTextLine()
         res = field.validate(b'abc')
         assert_that(res, is_(u'abc'))
+
+    def test_fromBytes(self):
+        from zope.schema.interfaces import IFromBytes
+        field = DecodingValidTextLine()
+        assert_that(field, verifiably_provides(IFromBytes))
+
+        val = field.fromBytes(b'abc')
+        assert_that(val, is_(u'abc'))
 
 class TestNumber(unittest.TestCase):
 
@@ -443,6 +512,10 @@ class TestDictFromObject(unittest.TestCase):
     def _makeOne(self, *args, **kwargs):
         return self._getTargetClass()(*args, **kwargs)
 
+    def test_interfaces(self):
+        assert_that(self._makeOne(),
+                    verifiably_provides(IFromObject))
+
     def test_accepts_mapping(self):
         from six.moves import UserDict
         from nti.schema.field import abcs
@@ -467,3 +540,59 @@ class TestDictFromObject(unittest.TestCase):
 
         assert_that(doc, contains_string('.. rubric:: Value Type'))
         assert_that(doc, contains_string('.. rubric:: Key Type'))
+
+
+class Test_FieldConverter(unittest.TestCase):
+
+    def _getTargetClass(self):
+        from nti.schema.field import _FieldConverter
+        return _FieldConverter
+
+    def _makeOne(self, field=None):
+        return self._getTargetClass()(field)
+
+    def test_fromBytes(self):
+
+        class Field(object):
+            def fromBytes(self, value):
+                return b'from bytes'
+
+        field = Field()
+        converter = self._makeOne(field)
+        assert_that(converter(b''), is_(b'from bytes'))
+
+        with self.assertRaises(WrongType) as exc:
+            converter(1)
+
+        exception = exc.exception
+        assert_that(exception, has_property('field', field))
+        assert_that(exception, has_property('value', 1))
+
+    def test_fromUnicode_always_called(self):
+        # This is legacy fallback behaviour
+        class Field(object):
+            def fromUnicode(self, value):
+                return u'from unicode'
+
+        converter = self._makeOne(Field())
+        assert_that(converter(b''), is_(u'from unicode'))
+        assert_that(converter(u''), is_(u'from unicode'))
+        assert_that(converter(1), is_(u'from unicode'))
+
+    def test_fromObject(self):
+        # from object is only called for non-strings if
+        # fromUnicode and fromBytes are implemented.
+        class Field(object):
+            def fromObject(self, value):
+                return b'from object'
+
+            def fromUnicode(self, value):
+                return u'from unicode'
+
+            def fromBytes(self, value):
+                return b'from bytes'
+
+        converter = self._makeOne(Field())
+        assert_that(converter(b''), is_(b'from bytes'))
+        assert_that(converter(u''), is_(u'from unicode'))
+        assert_that(converter(1), is_(b'from object'))
