@@ -3,11 +3,24 @@
 =========
 
 
-1.6.1 (unreleased)
+1.7.0 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Add support for ``IFromBytes`` in zope.schema 4.8.0.
 
+- The ``Variant`` and ``ListOrTupleFromObject``, ``TupleFromObject``,
+  ``DictFromObject`` fields all have tweaked behaviour in
+  ``fromObject``. If the incoming value is a bytestring or text
+  string, the underlying field's ``fromBytes`` and ``fromUnicode``
+  will be called in preference to a ``fromObject``, if that method is
+  implemented.
+
+- ``ValidSet`` and ``UniqueIterable`` now implement ``fromObject``.
+
+- All fields that implement ``fromObject`` now accept an ``Object``
+  field for their ``value_type`` (and ``key_type`` in the case of
+  ``DictFromObject``) and will attempt to adapt objects that do not
+  provide the schema in ``fromObject``.
 
 1.6.0 (2018-09-18)
 ==================
