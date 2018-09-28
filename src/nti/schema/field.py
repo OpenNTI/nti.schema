@@ -418,7 +418,11 @@ class Variant(FieldValidationMixin, schema.Field):
                     raise AssertionError("This is never reached")
                 else:
                     errors.append(e)
-        raise VariantValidationError(self, value, errors)
+        try:
+            raise VariantValidationError(self, value, errors)
+        finally:
+            # break cycles
+            e = errors = None
 
     def fromObject(self, obj):
         """
@@ -454,7 +458,11 @@ class Variant(FieldValidationMixin, schema.Field):
                     errors.append(ex)
 
         # We get here if nothing worked and re-raise the last exception
-        raise VariantValidationError(self, obj, errors)
+        try:
+            raise VariantValidationError(self, obj, errors)
+        finally:
+            # break cycles
+            ex = errors = None
 
     _EVENT_TYPES = (
         (string_types, BeforeTextAssignedEvent),
