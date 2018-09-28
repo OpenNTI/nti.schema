@@ -3,10 +3,12 @@
 =========
 
 
-1.7.1 (unreleased)
+1.8.0 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Add ``VariantValidationError``, an error raised by variant fields
+  when none of their constituent fields could adapt or validate the
+  value.
 
 
 1.7.0 (2018-09-19)

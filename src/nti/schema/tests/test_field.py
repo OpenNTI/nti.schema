@@ -45,6 +45,7 @@ from nti.schema.interfaces import IBeforeDictAssignedEvent
 from nti.schema.interfaces import IBeforeSequenceAssignedEvent
 from nti.schema.interfaces import IVariant
 from nti.schema.interfaces import IFromObject
+from nti.schema.interfaces import VariantValidationError
 # Import from the BWC location
 
 with warnings.catch_warnings():
@@ -139,8 +140,12 @@ class TestVariant(unittest.TestCase):
 
         assert_that(syntax_or_lookup.fromObject(u'foo'), is_(u'foo'))
 
-        assert_that(calling(syntax_or_lookup.fromObject).with_args(object()),
-                    raises(TypeError))
+        with self.assertRaises(VariantValidationError) as exc:
+            syntax_or_lookup.fromObject(object())
+
+        assert_that(exc.exception,
+                    has_property('errors',
+                                 has_length(len(syntax_or_lookup.fields))))
 
     def test_getDoc(self):
         syntax_or_lookup = Variant((Object(cmn_interfaces.ISyntaxError),
@@ -163,9 +168,21 @@ class TestVariant(unittest.TestCase):
         for d in {u'k': u'v'}, u'foo', [1, 2, 3]:
             assert_that(d, validated_by(variant))
 
-        # It rejects these
+        # It rejects these by raising a VariantValidationError
+        # with the same number of errors as fields
         for d in {u'k': 1}, b'foo', [1, 2, u'b']:
             assert_that(d, not_validated_by(variant))
+            with self.assertRaises(VariantValidationError) as exc:
+                variant.fromObject(d)
+
+            assert_that(exc.exception, has_property("errors",
+                                                    has_length(len(variant.fields))))
+
+            with self.assertRaises(VariantValidationError) as exc:
+                variant.validate(d)
+
+            assert_that(exc.exception, has_property("errors",
+                                                    has_length(len(variant.fields))))
 
         # A name set now is reflected down the line
         variant.__name__ = 'baz'
@@ -217,7 +234,7 @@ class TestVariant(unittest.TestCase):
 
     def test_invalid_construct(self):
         assert_that(calling(Variant).with_args(()),
-                    raises(WrongType))
+                    raises(SchemaNotProvided))
 
 class TestConfiguredVariant(unittest.TestCase):
 

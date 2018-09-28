@@ -186,7 +186,29 @@ class IVariant(sch_interfaces.IField, IFromObject):
     """
     Similar to :class:`zope.schema.interfaces.IObject`, but
     representing one of several different types.
+
+    If :meth:`fromObject` or :meth:`validate` fails, it should raise a
+    :class:`VariantValidationError`.
     """
+
+class VariantValidationError(sch_interfaces.ValidationError):
+    """
+    An error raised when a value is not suitable for any of the fields
+    of the variant.
+
+    The `errors` attribute is an ordered sequence of validation errors,
+    with one raised by each field of the variant in turn.
+
+    .. versionadded:: 1.8.0
+    """
+
+    #: A sequence of validation errors
+    errors = ()
+
+    def __init__(self, field, value, errors):
+        super(VariantValidationError, self).__init__()
+        self.with_field_and_value(field, value)
+        self.errors = errors
 
 class IListOrTuple(sch_interfaces.IList):
     pass

@@ -17,7 +17,6 @@ from __future__ import print_function
 # stdlib imports
 import numbers
 import re
-import sys
 
 try:
     import collections.abc as abcs
@@ -25,7 +24,6 @@ except ImportError: # pragma: no cover
     # Python 2
     import collections as abcs
 
-from six import reraise
 from six import string_types
 from six import text_type
 from zope import interface
@@ -77,6 +75,7 @@ from nti.schema.interfaces import BeforeTextLineAssignedEvent
 from nti.schema.interfaces import IFromObject
 from nti.schema.interfaces import IListOrTuple
 from nti.schema.interfaces import IVariant
+from nti.schema.interfaces import VariantValidationError
 
 
 __docformat__ = "restructuredtext en"
@@ -364,7 +363,7 @@ class Variant(FieldValidationMixin, schema.Field):
 
         """
         if not fields or not all((sch_interfaces.IField.providedBy(x) for x in fields)):
-            raise sch_interfaces.WrongType()
+            raise sch_interfaces.SchemaNotProvided(sch_interfaces.IField)
 
         # assign our children first so anything we copy to them as a result of the super
         # constructor (__name__) gets set
@@ -405,6 +404,7 @@ class Variant(FieldValidationMixin, schema.Field):
 
     def _validate(self, value):
         super(Variant, self)._validate(value)
+        errors = []
         for field in self.fields:
             try:
                 field.validate(value)
@@ -415,22 +415,29 @@ class Variant(FieldValidationMixin, schema.Field):
                         and hasattr(field, 'schema')
                         and field.schema.providedBy(value)):
                     self._reraise_validation_error(e, value)
-                if field is self.fields[-1]:
-                    # The last chance raised an exception. Nothing worked,
-                    # so bail.
-                    self._reraise_validation_error(e, value)
-        # We can never get here
-        raise AssertionError("This code should never be reached.")
+                    raise AssertionError("This is never reached")
+                else:
+                    errors.append(e)
+        try:
+            raise VariantValidationError(self, value, errors)
+        finally:
+            # break cycles
+            e = errors = None
 
     def fromObject(self, obj):
         """
-        Similar to `fromUnicode`, attempts to turn the given object into something
-        acceptable and valid for this field. Raises a TypeError, ValueError, or
-        schema ValidationError if this cannot be done. Adaptation is attempted in the order
-        in which fields were given to the constructor. Some fields cannot be used to adapt.
+        Similar to `fromUnicode`, attempts to turn the given object
+        into something acceptable and valid for this field. Raises a
+        `~.VariantValidationError` if this isn't possible. Adaptation
+        is attempted in the order in which fields were given to the
+        constructor. Some fields cannot be used to adapt.
+
+        .. versionchanged:: 1.8.0
+           Raise `~.VariantValidationError` instead of whatever
+           last error we got.
         """
 
-        exc_info = None
+        errors = []
 
         for field in self.fields:
             try:
@@ -438,29 +445,24 @@ class Variant(FieldValidationMixin, schema.Field):
 
                 # Try to convert and validate
                 adapted = converter(obj)
-            except (TypeError, sch_interfaces.ValidationError):
+            except (TypeError, sch_interfaces.ValidationError) as ex:
                 # Nope, no good
-                exc_info = sys.exc_info()
+                errors.append(ex)
             else:
-                # We got one that like the type. Do the validation
-                # now, and then return. Don't try to convert with others;
-                # this is probably our best error
+                # We got one that likes the type. Do the validation
+                # now, and then return if successful.
                 try:
                     field.validate(adapted)
                     return adapted
-                except sch_interfaces.SchemaNotProvided: # pragma: no cover
-                    # Except in one case. Some schema provides adapt to something
-                    # that they do not actually want (e.g.,
-                    # ISanitizedHTMLContent can adapt as IPlainText
-                    # when empty)
-                    # so ignore that and keep trying
-                    exc_info = sys.exc_info()
+                except sch_interfaces.ValidationError as ex: # pragma: no cover
+                    errors.append(ex)
 
         # We get here if nothing worked and re-raise the last exception
         try:
-            reraise(*exc_info)
+            raise VariantValidationError(self, obj, errors)
         finally:
-            del exc_info
+            # break cycles
+            ex = errors = None
 
     _EVENT_TYPES = (
         (string_types, BeforeTextAssignedEvent),
