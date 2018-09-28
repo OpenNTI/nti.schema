@@ -3,7 +3,7 @@
 =========
 
 
-1.8.0 (unreleased)
+1.8.0 (2018-09-28)
 ==================
 
 - Add ``VariantValidationError``, an error raised by variant fields
