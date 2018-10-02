@@ -374,8 +374,17 @@ class _FieldConverter(object):
 @interface.implementer(IVariant)
 class Variant(FieldValidationMixin, schema.Field):
     """
-    Similar to :class:`zope.schema.Object`, but accepts one of many non-overlapping
-    interfaces.
+    Similar to :class:`zope.schema.Object`, but accepts one of many
+    non-overlapping interfaces.
+
+    .. versionchanged:: 1.9.0
+
+        Implementations of :class:`zope.schema.interfaces.ICollection`
+        (like :class:`zope.schema.List`) and
+        :class:`zope.schema.interfaces.IMapping` (like
+        :class:`zope.schema.Dict`) will automatically be given a ``fromObject`` method
+        when they are used as a field of this object *if* their *value_type* is an
+        :class:`zope.schema.interfaces.IObject` (recursively).
     """
 
     fields = ()
@@ -738,6 +747,9 @@ class _SequenceFromObjectMixin(object):
 class _SequenceFromObject(_SequenceFromObjectMixin):
 
     def __init__(self, field):
+        # We deliberately do not call the super init. The field's value_type
+        # must already be valid.
+        # pylint:disable=super-init-not-called
         self.__field = field
 
     def __getattr__(self, name):
@@ -763,6 +775,9 @@ class _MapFromObjectMixin(_SequenceFromObjectMixin):
 class _MapFromObject(_MapFromObjectMixin):
 
     def __init__(self, field):
+        # We deliberately do not call the super init. The field's value_type
+        # and key_type must already be valid.
+        # pylint:disable=super-init-not-called
         self.__field = field
 
     def __getattr__(self, name):
@@ -774,6 +789,15 @@ class ListOrTupleFromObject(_SequenceFromObjectMixin, ListOrTuple):
     The ``value_type`` MUST be a :class:`Variant`, or more generally,
     something supporting :class:`IFromObject`, :class:`IFromUnicode`
     or :class:`IFromBytes`.
+
+    .. versionchanged:: 1.9.0
+
+        Implementations of :class:`zope.schema.interfaces.ICollection`
+        (like :class:`zope.schema.List`) and
+        :class:`zope.schema.interfaces.IMapping` (like
+        :class:`zope.schema.Dict`) will automatically be given a ``fromObject`` method
+        when used as the *value_type* of this object *if* their *value_type* is an
+        :class:`zope.schema.interfaces.IObject` (recursively).
     """
 
 
@@ -788,7 +812,16 @@ class TupleFromObject(_ValueTypeAddingDocMixin,
 
     When setting through this object, we will automatically convert
     lists and only lists to tuples (for convenience coming in through
-    JSON)
+    JSON).
+
+    .. versionchanged:: 1.9.0
+
+        Implementations of :class:`zope.schema.interfaces.ICollection`
+        (like :class:`zope.schema.List`) and
+        :class:`zope.schema.interfaces.IMapping` (like
+        :class:`zope.schema.Dict`) will automatically be given a ``fromObject`` method
+        when used as the *value_type* of this object *if* their *value_type* is an
+        :class:`zope.schema.interfaces.IObject` (recursively).
     """
     accept_types = (list, tuple)
 
@@ -817,6 +850,15 @@ class DictFromObject(_ValueTypeAddingDocMixin,
        Subclass :class:`zope.schema.Mapping` instead of :class:`zope.schema.Dict`,
        allowing for any mapping (such as BTrees), not just dicts. However, the validated
        value is still a dict.
+
+    .. versionchanged:: 1.9.0
+
+        Implementations of :class:`zope.schema.interfaces.ICollection`
+        (like :class:`zope.schema.List`) and
+        :class:`zope.schema.interfaces.IMapping` (like
+        :class:`zope.schema.Dict`) will automatically be given a ``fromObject`` method
+        when used as the *value_type* of this object *if* their *value_type* is an
+        :class:`zope.schema.interfaces.IObject` (recursively).
     """
 
 
@@ -830,6 +872,15 @@ class ValidSet(_ValueTypeAddingDocMixin,
 
     .. versionchanged:: 1.5.0
        Implement :class:`IFromObject`.
+
+    .. versionchanged:: 1.9.0
+
+        Implementations of :class:`zope.schema.interfaces.ICollection`
+        (like :class:`zope.schema.List`) and
+        :class:`zope.schema.interfaces.IMapping` (like
+        :class:`zope.schema.Dict`) will automatically be given a ``fromObject`` method
+        when used as the *value_type* of this object *if* their *value_type* is an
+        :class:`zope.schema.interfaces.IObject` (recursively).
     """
 
 
@@ -842,6 +893,15 @@ class UniqueIterable(ValidSet):
 
     .. versionchanged:: 1.5.0
        Implement :class:`IFromObject`.
+
+    .. versionchanged:: 1.9.0
+
+        Implementations of :class:`zope.schema.interfaces.ICollection`
+        (like :class:`zope.schema.List`) and
+        :class:`zope.schema.interfaces.IMapping` (like
+        :class:`zope.schema.Dict`) will automatically be given a ``fromObject`` method
+        when used as the *value_type* of this object *if* their *value_type* is an
+        :class:`zope.schema.interfaces.IObject` (recursively).
     """
     _type = None  # Override to not force a set
 
