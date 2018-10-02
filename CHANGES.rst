@@ -3,7 +3,7 @@
 =========
 
 
-1.9.0 (unreleased)
+1.9.0 (2018-10-02)
 ==================
 
 - ``Variant`` objects now automatically add ``fromObject`` support to
