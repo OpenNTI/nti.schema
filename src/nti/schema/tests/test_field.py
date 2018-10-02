@@ -69,6 +69,8 @@ from hamcrest import is_not
 from hamcrest import none
 from hamcrest import raises
 
+does_not = is_not
+
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
@@ -212,6 +214,63 @@ class TestVariant(unittest.TestCase):
 
         res = field.fromObject(['http://example.com'])
         assert_that(res, is_(('http://example.com',)))
+
+    def test_variant_auto_convert_sequence(self):
+        from zope.schema import List
+        from zope.schema import Field
+
+        string_field = Object(IUnicode)
+        list_field = List(string_field)
+        assert_that(list_field, does_not(verifiably_provides(IFromObject)))
+
+        # But once we add it to a variant, it does
+
+        variant = Variant((list_field,))
+
+        assert_that(list_field, verifiably_provides(IFromObject))
+
+        bound_variant = variant.bind(self)
+
+        assert_that(bound_variant.fields[0], verifiably_provides(IFromObject))
+
+        l = bound_variant.fromObject([u'abc'])
+        assert_that(l, is_([u'abc']))
+
+        # Doing the same with a list of a field we don't know about
+        # does nothing.
+        field = Field()
+        list_field = List(field)
+        assert_that(list_field, does_not(verifiably_provides(IFromObject)))
+        variant = Variant((list_field,))
+        assert_that(list_field, does_not(verifiably_provides(IFromObject)))
+
+    def test_variant_auto_convert_mapping(self):
+        from zope.schema import Dict as ZDict # pylint:disable=reimported
+        from zope.schema import Field
+
+        string_field = Object(IUnicode)
+        map_field = ZDict(string_field, string_field)
+        assert_that(map_field, does_not(verifiably_provides(IFromObject)))
+
+        # But once we add it to a variant, it does
+
+        variant = Variant((map_field,))
+
+        assert_that(map_field, verifiably_provides(IFromObject))
+
+        bound_variant = variant.bind(self)
+
+        assert_that(bound_variant.fields[0], verifiably_provides(IFromObject))
+
+        l = bound_variant.fromObject({u'abc': u'def'})
+        assert_that(l, is_({u'abc': u'def'}))
+
+        # Doing the same with a list of a field we don't know about
+        # does nothing.
+        map_field = ZDict(Field(), Field())
+        assert_that(map_field, does_not(verifiably_provides(IFromObject)))
+        variant = Variant((map_field,))
+        assert_that(map_field, does_not(verifiably_provides(IFromObject)))
 
     def test_converts_but_not_valid(self):
         # If the schema accepts the input, but the validation refuses,

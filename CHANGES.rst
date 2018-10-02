@@ -3,10 +3,14 @@
 =========
 
 
-1.8.1 (unreleased)
+1.9.0 (unreleased)
 ==================
 
-- Nothing changed yet.
+- ``Variant`` objects now automatically add ``fromObject`` support to
+  ``ICollection`` and ``IMapping`` fields that do not already provide
+  it, if their ``value_type`` (and ``key_type``) qualify by being
+  either an ``Object`` field, or something that provides
+  ``IFromObject`` or can be made to, such as a collection or mapping.
 
 
 1.8.0 (2018-09-28)

@@ -166,18 +166,47 @@ def __with_set(eventfactory=BeforeSchemaFieldAssignedEvent):
     return X
 
 def _fixup_Object_field(field):
-    if not IFromObject.providedBy(field) and isinstance(field, _ObjectBase):
-        # An object field can do this with a tiny bit of help.
-        def _object_fromObject(value):
-            if not field.schema.providedBy(value):
-                # Allow the TypeError or LookupError to propagate,
-                # signalling nti.externalization that it doesn't need to
-                # try to adapt again.
-                value = field.schema(value)
-            field.validate(value)
-            return value
-        field.fromObject = _object_fromObject
-        interface.alsoProvides(field, IFromObject)
+    # If possible, make the field provide IFromObject
+    if not IFromObject.providedBy(field):
+        if isinstance(field, _ObjectBase):
+            # An object field can do this with a tiny bit of help.
+            def _object_fromObject(value):
+                if not field.schema.providedBy(value):
+                    # Allow the TypeError or LookupError to propagate,
+                    # signalling nti.externalization that it doesn't need to
+                    # try to adapt again.
+                    value = field.schema(value)
+                field.validate(value)
+                return value
+            field.fromObject = _object_fromObject
+            interface.alsoProvides(field, IFromObject)
+        elif sch_interfaces.ICollection.providedBy(field):
+            # Has a value_type
+            try:
+                # pylint:disable=protected-access
+                _SequenceFromObjectMixin._validate_contained_field(field.value_type)
+            except sch_interfaces.SchemaNotProvided:
+                # Nothing we can do
+                pass
+            else:
+                def _collection_fromObject(value):
+                    return _SequenceFromObject(field).fromObject(value)
+                field.fromObject = _collection_fromObject
+                interface.alsoProvides(field, IFromObject)
+        elif sch_interfaces.IMapping.providedBy(field):
+            # Has a value_type and key_type
+            try:
+                # pylint:disable=protected-access
+                _SequenceFromObjectMixin._validate_contained_field(field.value_type)
+                _SequenceFromObjectMixin._validate_contained_field(field.key_type)
+            except sch_interfaces.SchemaNotProvided:
+                # Nothing we can do
+                pass
+            else:
+                def _map_fromObject(value):
+                    return _MapFromObject(field).fromObject(value)
+                field.fromObject = _map_fromObject
+                interface.alsoProvides(field, IFromObject)
     return field
 
 
@@ -673,7 +702,8 @@ class _SequenceFromObjectMixin(object):
         super(_SequenceFromObjectMixin, self).__init__(*args, **kwargs)
         self._validate_contained_field(self.value_type)
 
-    def _validate_contained_field(self, field):
+    @classmethod
+    def _validate_contained_field(cls, field):
         field = _fixup_Object_field(field)
         # We allow None for a value type
         if field is not None and not any(
@@ -703,6 +733,40 @@ class _SequenceFromObjectMixin(object):
 
         result = self._do_fromObject(context)
         return self._do_convert_result(result)
+
+
+class _SequenceFromObject(_SequenceFromObjectMixin):
+
+    def __init__(self, field):
+        self.__field = field
+
+    def __getattr__(self, name):
+        return getattr(self.__field, name)
+
+
+class _MapFromObjectMixin(_SequenceFromObjectMixin):
+
+    def __init__(self, *args, **kwargs):
+        super(_MapFromObjectMixin, self).__init__(*args, **kwargs)
+        self._validate_contained_field(self.key_type)
+
+    def _do_convert_result(self, result):
+        assert isinstance(result, dict)
+        return result
+
+    def _do_fromObject(self, context):
+        key_converter = self._converter_for(self.key_type)
+        value_converter = self._converter_for(self.value_type)
+        return {key_converter(k): value_converter(v) for k, v in _iteritems(context)}
+
+
+class _MapFromObject(_MapFromObjectMixin):
+
+    def __init__(self, field):
+        self.__field = field
+
+    def __getattr__(self, name):
+        return getattr(self.__field, name)
 
 
 class ListOrTupleFromObject(_SequenceFromObjectMixin, ListOrTuple):
@@ -742,7 +806,7 @@ class TupleFromObject(_ValueTypeAddingDocMixin,
 
 @__with_set(BeforeDictAssignedEvent)
 class DictFromObject(_ValueTypeAddingDocMixin,
-                     _SequenceFromObjectMixin,
+                     _MapFromObjectMixin,
                      FieldValidationMixin,
                      schema.Mapping):
     """
@@ -754,19 +818,6 @@ class DictFromObject(_ValueTypeAddingDocMixin,
        allowing for any mapping (such as BTrees), not just dicts. However, the validated
        value is still a dict.
     """
-
-    def __init__(self, *args, **kwargs):
-        super(DictFromObject, self).__init__(*args, **kwargs)
-        self._validate_contained_field(self.key_type)
-
-    def _do_convert_result(self, result):
-        assert isinstance(result, dict)
-        return result
-
-    def _do_fromObject(self, context):
-        key_converter = self._converter_for(self.key_type)
-        value_converter = self._converter_for(self.value_type)
-        return {key_converter(k): value_converter(v) for k, v in _iteritems(context)}
 
 
 @__with_set(BeforeSetAssignedEvent)
