@@ -3,7 +3,7 @@
 =========
 
 
-1.9.1 (unreleased)
+1.9.1 (2018-10-03)
 ==================
 
 - Make ``VariantValidationError`` and ``Variant`` have more useful
