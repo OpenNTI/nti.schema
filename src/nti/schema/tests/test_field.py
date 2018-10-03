@@ -302,8 +302,11 @@ class TestVariant(unittest.TestCase):
             http_field.fromUnicode(None)
 
         # Gets wrapped up into a validation error by a Variant
-        # (anything that does a conversion, actually)
-        field = Variant((http_field,))
+        # (anything that does a conversion, actually).
+        # We have to use a non-default (and thus non None)
+        # missing value to take this code path.
+        field = Variant((http_field,),
+                        missing_value=self)
 
         with self.assertRaises(VariantValidationError) as exc:
             field.fromObject(None)
@@ -340,9 +343,32 @@ class TestVariant(unittest.TestCase):
                 assert_that(value, is_(none()))
                 return 42
 
-        variant = Variant([MyField()])
+        variant = Variant([MyField()], required=False)
         x = variant.fromObject(None)
         assert_that(x, is_(42))
+
+    def test_missing_value_not_required(self):
+        from zope.schema.interfaces import RequiredMissing
+        text = TextLine()
+
+        variant = Variant((text,), required=False)
+        # None is the default missing value, and it's allowed
+        assert_that(variant.fromObject(None),
+                    is_(none()))
+
+        # If we are required, though, we cannot use the missing value
+        variant = Variant((text,), required=True)
+        with self.assertRaises(RequiredMissing):
+            variant.fromObject(None)
+
+        # We can use arbitrary other missing values
+        variant = Variant((text,), required=False, missing_value=self)
+        assert_that(variant.fromObject(self),
+                    is_(self))
+
+        # And None now raises.
+        with self.assertRaises(VariantValidationError):
+            variant.fromObject(None)
 
 class TestConfiguredVariant(unittest.TestCase):
 
@@ -424,7 +450,34 @@ class TestUniqueIterable(TestValidSet):
 
     default_min_length = none()
 
-class TestTupleFromObject(unittest.TestCase):
+class SequenceFromObjectMixinMixin(object):
+
+    def _getTargetClass(self):
+        raise NotImplementedError
+
+    def _makeOne(self, *args, **kwargs):
+        return self._getTargetClass()(*args, **kwargs)
+
+    def test_accepts_missing_value(self):
+        from zope.schema.interfaces import RequiredMissing
+        field = self._makeOne(required=False, missing_value=None)
+        assert_that(field.fromObject(None), is_(none()))
+
+        # but if we're required, we get a different exception
+        field = self._makeOne(required=True, missing_value=None)
+        with self.assertRaises(RequiredMissing):
+            field.fromObject(None)
+
+        # We can change the type
+        field = self._makeOne(required=False, missing_value=self)
+        assert_that(field.fromObject(self), is_(self))
+
+
+class TestTupleFromObject(SequenceFromObjectMixinMixin,
+                          unittest.TestCase):
+
+    def _getTargetClass(self):
+        return TupleFromObject
 
     def test_set(self):
         field = TupleFromObject(__name__='foo')
@@ -460,7 +513,13 @@ class TestTupleFromObject(unittest.TestCase):
         res = field.fromObject(['http://example.com'])
         assert_that(res, is_(('http://example.com',)))
 
-class TestListOrTupleFromObject(unittest.TestCase):
+
+
+class TestListOrTupleFromObject(SequenceFromObjectMixinMixin,
+                                unittest.TestCase):
+
+    def _getTargetClass(self):
+        return ListOrTupleFromObject
 
     def test_construct_with_object(self):
         field = ListOrTupleFromObject(Object(IUnicode))
@@ -628,14 +687,12 @@ class TestValueTypeAddingDocMixin(unittest.TestCase):
         assert_that(doc, contains_string(':Accepted Types: :class:`list`, :class:`tuple`'))
 
 
-class TestDictFromObject(unittest.TestCase):
+class TestDictFromObject(SequenceFromObjectMixinMixin,
+                         unittest.TestCase):
 
     def _getTargetClass(self):
         from nti.schema.field import DictFromObject
         return DictFromObject
-
-    def _makeOne(self, *args, **kwargs):
-        return self._getTargetClass()(*args, **kwargs)
 
     def test_interfaces(self):
         assert_that(self._makeOne(),

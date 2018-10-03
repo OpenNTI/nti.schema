@@ -14,6 +14,16 @@
   (such as None). This is especially helpful for ``Variant`` fields
   because they can catch the error and continue to the next field.
 
+- Fix ``Variant``, ``TupleFromObject``, ``DictFromObject``,
+  ``ListFromObject`` and ``ListOrTupleFromObject`` to allow the
+  ``missing_value`` (which defaults to ``None``) in their
+  ``fromObject`` methods; passing that value in simply returns it
+  without raising an exception if the field is not required. If the
+  field is required, a ``RequiredMissing`` is raised. Previously the
+  sequences raised a ``WrongType`` error, while ``Variant`` *may* or
+  *may not* have raised an error, depending on the underlying fields
+  in use.
+
 
 1.9.0 (2018-10-02)
 ==================
