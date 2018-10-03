@@ -295,6 +295,55 @@ class TestVariant(unittest.TestCase):
         assert_that(calling(Variant).with_args(()),
                     raises(SchemaNotProvided))
 
+    def test_AttributeError_transformed(self):
+        # Something that blows up badly on None input
+        http_field = HTTPURL()
+        with self.assertRaises(AttributeError):
+            http_field.fromUnicode(None)
+
+        # Gets wrapped up into a validation error by a Variant
+        # (anything that does a conversion, actually)
+        field = Variant((http_field,))
+
+        with self.assertRaises(VariantValidationError) as exc:
+            field.fromObject(None)
+
+        ex = exc.exception
+        assert_that(ex.errors, has_length(1))
+        assert_that(ex.errors[0], is_(WrongType))
+
+        for val in repr(ex), str(ex):
+            assert_that(val, contains_string("WrongType"))
+            assert_that(val, contains_string("Value:"))
+            assert_that(val, contains_string("Field:"))
+
+    def test_AttributeError_raised_on_str_input(self):
+        # These are allowed to propagate, it's some sort of bug
+        from zope.schema import Field
+        class MyField(Field):
+            def fromUnicode(self, value):
+                # We're getting called as a last resort, passed
+                # the bytes value, even though we want text.
+                assert_that(value, is_(b'42'))
+                raise AttributeError
+
+        variant = Variant([MyField()])
+        with self.assertRaises(AttributeError):
+            variant.fromObject(b'42')
+
+    def test_None_still_passed(self):
+        # But something that can accept None
+        # does get it still
+        from zope.schema import Field
+        class MyField(Field):
+            def fromUnicode(self, value):
+                assert_that(value, is_(none()))
+                return 42
+
+        variant = Variant([MyField()])
+        x = variant.fromObject(None)
+        assert_that(x, is_(42))
+
 class TestConfiguredVariant(unittest.TestCase):
 
     layer = SchemaLayer

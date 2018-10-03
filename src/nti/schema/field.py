@@ -347,12 +347,10 @@ class _FieldConverter(object):
         # Take make it easier on implementers of fromObject,
         # if the also implement fromBytes/fromUnicode, we call those
         # first.
-        if self.fromBytes is not None and isinstance(value, bytes):
+        if isinstance(value, bytes) and self.fromBytes is not None:
             return self.fromBytes(value)
 
-        if self.fromUnicode is not None and isinstance(value, text_type):
-            # Hoping for strings at this point.
-            # for BWC, we always call this method.
+        if isinstance(value, text_type) and self.fromUnicode is not None:
             return self.fromUnicode(value)
 
         if self.fromObject is not None:
@@ -361,7 +359,14 @@ class _FieldConverter(object):
         if self.fromUnicode is not None:
             # Hoping for strings at this point.
             # for BWC, we always call this method.
-            return self.fromUnicode(value)
+            try:
+                return self.fromUnicode(value)
+            except AttributeError:
+                # Something went wrong. Was the value None or not a string? In that
+                # case we can raise a better error. Otherwise, it's probably some sort of
+                # implementation bug and we want to let this propagate.
+                if isinstance(value, (bytes, text_type)):
+                    raise
 
         raise sch_interfaces.WrongType(
             value,
@@ -430,6 +435,13 @@ class Variant(FieldValidationMixin, schema.Field):
             lines.append(field.getDoc())
 
         return lines
+
+    def __repr__(self):
+        return "<%s.%s at 0x%x name=%r interface=%r context=%r fields=%r>" % (
+            type(self).__module__, type(self).__name__,
+            id(self), self.__name__,
+            self.interface, self.context, self.fields
+        )
 
     def bind(self, obj):
         # The fields member really does exist

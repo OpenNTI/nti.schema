@@ -10,6 +10,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import traceback
+
 from zope.deprecation import deprecated
 
 from zope.schema import Text
@@ -209,6 +211,31 @@ class VariantValidationError(sch_interfaces.ValidationError):
         super(VariantValidationError, self).__init__()
         self.with_field_and_value(field, value)
         self.errors = errors
+
+    def _ex_details(self):
+        lines = []
+        for e in self.errors:
+            info = traceback.format_exception_only(type(e), e)
+            # Trim trailing newline
+            info[-1] = info[-1].rstrip()
+            lines.append('\n'.join(info))
+        return lines
+
+    def _with_details(self, opening, detail_formatter):
+        lines = ['      ' + e for e in self._ex_details()]
+        lines.append('    Field: ' + detail_formatter(self.field))
+        lines.append('    Value: ' + detail_formatter(self.value))
+        lines.append(opening)
+        lines.reverse()
+        return '\n'.join(lines)
+
+    def __str__(self):
+        s = super(VariantValidationError, self).__str__()
+        return self._with_details(s, str)
+
+    def __repr__(self):
+        s = super(VariantValidationError, self).__repr__()
+        return self._with_details(s, repr)
 
 class IListOrTuple(sch_interfaces.IList):
     pass
