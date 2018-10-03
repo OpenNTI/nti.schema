@@ -6,7 +6,13 @@
 1.9.1 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Make ``VariantValidationError`` and ``Variant`` have more useful
+  string representations.
+
+- Make ``fromObject`` methods more gracefully handle an AttributeError
+  raised by an underlying ``fromUnicode`` method on non-string input
+  (such as None). This is especially helpful for ``Variant`` fields
+  because they can catch the error and continue to the next field.
 
 
 1.9.0 (2018-10-02)
