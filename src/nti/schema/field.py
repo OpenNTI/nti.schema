@@ -171,7 +171,7 @@ def _fixup_Object_field(field):
         if isinstance(field, _ObjectBase):
             # An object field can do this with a tiny bit of help.
             def _object_fromObject(value):
-                if not field.schema.providedBy(value):
+                if not field.schema.providedBy(value) and value != field.missing_value:
                     # Allow the TypeError or LookupError to propagate,
                     # signalling nti.externalization that it doesn't need to
                     # try to adapt again.
@@ -485,7 +485,17 @@ class Variant(FieldValidationMixin, schema.Field):
         .. versionchanged:: 1.8.0
            Raise `~.VariantValidationError` instead of whatever
            last error we got.
+        .. versionchanged:: 1.9.1
+           Respect ``self.missing_value`` and don't raise an exception
+           if it is passed to this method and we're not required.
         """
+        if obj == self.missing_value:
+            if self.required:
+                raise sch_interfaces.RequiredMissing(self.__name__).with_field_and_value(self, obj)
+
+            # If we're not required, we still attempt all the adaptation steps
+            # just in case some field can convert us very nicely, but
+            # we won't raise the final exception
 
         errors = []
 
@@ -507,7 +517,13 @@ class Variant(FieldValidationMixin, schema.Field):
                 except sch_interfaces.ValidationError as ex: # pragma: no cover
                     errors.append(ex)
 
-        # We get here if nothing worked and re-raise the last exception
+        # We get here if nothing worked.
+        if obj == self.missing_value:
+            # Well it's the missing value. By definition we're not required
+            # at this point (we would have raised already), so we can just return it.
+            assert not self.required
+            return self.missing_value
+
         try:
             raise VariantValidationError(self, obj, errors)
         finally:
@@ -748,6 +764,13 @@ class _SequenceFromObjectMixin(object):
         return result
 
     def fromObject(self, context):
+        if context == self.missing_value:
+            if self.required:
+                raise sch_interfaces.RequiredMissing(self.__name__).with_field_and_value(self, context)
+            # Nothing useful to do here, we're not required, don't
+            # even try to convert
+            return context
+
         check_type = self.accept_types or self._type
         if check_type is not None and not isinstance(context, check_type):
             raise sch_interfaces.WrongType(context, check_type).with_field_and_value(self, context)
