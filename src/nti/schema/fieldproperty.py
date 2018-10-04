@@ -149,3 +149,67 @@ def createDirectFieldProperties(__schema, omit=(), adapting=False):
             if adapting and sch_interfaces.IObject.providedBy(__schema[k]):
                 v = AdaptingFieldProperty(__schema[k])
             __frame.f_locals[k] = v
+
+
+def field_name(field):
+    """
+    Produce a clean version of a field's name.
+
+    The
+    :class:`zope.schema.fieldproperty.FieldPropertyStoredThroughField`
+    class mangles the field name, making it difficult to trace fields
+    back to their intended attribute name. This undoes that mangling
+    if possible.
+
+    The field in an interface has a normal name::
+
+        >>> from zope.schema.fieldproperty import FieldPropertyStoredThroughField
+        >>> from zope.schema import Field
+        >>> from zope import interface
+        >>> class IA(interface.Interface):
+        ...    a = Field()
+        >>> IA['a'].__name__
+        'a'
+
+    The field as stored by a ``FieldProperty`` has a normal name::
+
+        >>> from zope.schema.fieldproperty import FieldProperty
+        >>> class A(object):
+        ...    createFieldProperties(IA)
+        >>> A.a.__name__
+        'a'
+
+    But using a ``FieldPropertyStoredThroughField`` mangles the name
+    (whether accessed through the ``FieldPropertyStoredThroughField``
+    or directly)::
+
+        >>> from zope.schema.fieldproperty import FieldPropertyStoredThroughField
+        >>> class A2(object):
+        ...    a = FieldPropertyStoredThroughField(IA['a'])
+        >>> A2.a.__name__
+        '__st_a_st'
+        >>> A2.a.field.__name__
+        '__st_a_st'
+
+    This function demangles the name (whether accessed through the
+    ``FieldPropertyStoredThroughField`` or directly)::
+
+        >>> from nti.schema.fieldproperty import field_name
+        >>> field_name(A2.a)
+        'a'
+        >>> field_name(A2.a.field)
+        'a'
+
+    Without damaging the names of regular fields or regular
+    ``FieldProperty`` fields::
+
+        >>> field_name(IA['a'])
+        'a'
+        >>> field_name(A.a)
+        'a'
+
+    .. versionadded:: 1.10.0
+    """
+    if field.__name__ and field.__name__.startswith('__st_') and field.__name__.endswith('_st'):
+        return field.__name__[5:-3]
+    return field.__name__

@@ -220,10 +220,11 @@ class FieldValidationMixin(object):
         """
         The :class:`zope.schema.fieldproperty.FieldPropertyStoredThroughField` class mangles
         the field name; this undoes that mangling.
+
+        .. seealso:: `nti.schema.fieldproperty.field_name`
         """
-        if self.__name__ and self.__name__.startswith('__st_') and self.__name__.endswith('_st'):
-            return self.__name__[5:-3]
-        return self.__name__
+        from nti.schema.fieldproperty import field_name
+        return field_name(self)
 
     def _fixup_validation_error_args(self, e, value):
         # Called when the exception has one argument, which is usually, though not always,
