@@ -17,6 +17,7 @@ from zope.component import eventtesting
 
 from zope.interface.common import interfaces as cmn_interfaces
 from zope.schema import Dict
+from zope.schema.interfaces import ValidationError
 from zope.schema.interfaces import InvalidURI
 from zope.schema.interfaces import SchemaNotProvided
 from zope.schema.interfaces import TooLong
@@ -297,6 +298,8 @@ class TestVariant(unittest.TestCase):
 
     def test_AttributeError_transformed(self):
         # Something that blows up badly on None input
+        # to fromUnicode never gets there.
+        from zope.schema.interfaces import RequiredMissing
         http_field = HTTPURL()
         with self.assertRaises(AttributeError):
             http_field.fromUnicode(None)
@@ -313,39 +316,40 @@ class TestVariant(unittest.TestCase):
 
         ex = exc.exception
         assert_that(ex.errors, has_length(1))
-        assert_that(ex.errors[0], is_(WrongType))
+        assert_that(ex.errors[0], is_(RequiredMissing))
 
         for val in repr(ex), str(ex):
-            assert_that(val, contains_string("WrongType"))
+            assert_that(val, contains_string("RequiredMissing"))
             assert_that(val, contains_string("Value:"))
             assert_that(val, contains_string("Field:"))
 
-    def test_AttributeError_raised_on_str_input(self):
-        # These are allowed to propagate, it's some sort of bug
-        from zope.schema import Field
-        class MyField(Field):
-            def fromUnicode(self, value):
-                # We're getting called as a last resort, passed
-                # the bytes value, even though we want text.
-                assert_that(value, is_(b'42'))
-                raise AttributeError
+    def test_numbers_pass_unchanged(self):
+        from zope.schema import Number as ZNumber
 
-        variant = Variant([MyField()])
-        with self.assertRaises(AttributeError):
-            variant.fromObject(b'42')
+        number = ZNumber()
+        variant = Variant([number])
 
-    def test_None_still_passed(self):
+        assert_that(variant.fromObject(10), is_(10))
+
+    def test_None_not_passed_to_fromUnicode(self):
         # But something that can accept None
         # does get it still
         from zope.schema import Field
         class MyField(Field):
-            def fromUnicode(self, value):
-                assert_that(value, is_(none()))
-                return 42
 
-        variant = Variant([MyField()], required=False)
+            last_value = None
+
+            def fromUnicode(self, value):
+                raise AssertionError("Should not be called")
+
+            def validate(self, value):
+                self.last_value = 42
+
+        field = MyField()
+        variant = Variant([field], required=False)
         x = variant.fromObject(None)
-        assert_that(x, is_(42))
+        assert_that(x, is_(none()))
+        assert_that(field.last_value, is_(42))
 
     def test_missing_value_not_required(self):
         from zope.schema.interfaces import RequiredMissing
@@ -636,8 +640,6 @@ class TestFieldValidationMixin(unittest.TestCase):
             field.validate(0)
 
     def test_random_validation_error(self):
-        from zope.schema.interfaces import ValidationError
-
         class Field(object):
             __name__ = ''
             def _validate(self, v):
@@ -739,6 +741,9 @@ class Test_FieldConverter(unittest.TestCase):
             def fromBytes(self, value):
                 return b'from bytes'
 
+            def validate(self, value):
+                raise WrongType
+
         field = Field()
         converter = self._makeOne(field)
         assert_that(converter(b''), is_(b'from bytes'))
@@ -750,16 +755,27 @@ class Test_FieldConverter(unittest.TestCase):
         assert_that(exception, has_property('field', field))
         assert_that(exception, has_property('value', 1))
 
-    def test_fromUnicode_always_called(self):
-        # This is legacy fallback behaviour
+    def test_validate_called_last(self):
+        # If we had nothing else to do, we
+        # call validate and if it doesn't raise, we return
         class Field(object):
-            def fromUnicode(self, value):
-                return u'from unicode'
+            def validate(self, value):
+                if value == 42:
+                    raise ValidationError
 
-        converter = self._makeOne(Field())
-        assert_that(converter(b''), is_(u'from unicode'))
-        assert_that(converter(u''), is_(u'from unicode'))
-        assert_that(converter(1), is_(u'from unicode'))
+        field = Field()
+        # A bad value raises, and we fill in the field and value if
+        # needed.
+        converter = self._makeOne(field)
+        with self.assertRaises(ValidationError) as exc:
+            converter(42)
+
+        assert_that(exc.exception.field, is_(field))
+        assert_that(exc.exception.value, is_(42))
+
+        # Otherwise we return the value we were passed
+        assert_that(converter(b''), is_(b''))
+        assert_that(converter(u''), is_(u''))
 
     def test_fromObject(self):
         # from object is only called for non-strings if
