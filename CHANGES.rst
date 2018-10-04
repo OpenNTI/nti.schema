@@ -3,7 +3,7 @@
 =========
 
 
-1.9.2 (unreleased)
+1.9.2 (2018-10-04)
 ==================
 
 - Fix ``Variant`` and other implementations of ``IFromObject`` to stop
