@@ -3,7 +3,7 @@
 =========
 
 
-1.10.0 (unreleased)
+1.10.0 (2018-10-04)
 ===================
 
 - Add ``nti.schema.fieldproperty.field_name`` to compensate for the
