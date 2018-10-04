@@ -3,10 +3,11 @@
 =========
 
 
-1.9.3 (unreleased)
+1.10.0 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Add ``nti.schema.fieldproperty.field_name`` to compensate for the
+  mangling that ``FieldPropertyStoredThroughField`` does.
 
 
 1.9.2 (2018-10-04)
