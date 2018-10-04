@@ -6,8 +6,16 @@
 1.9.2 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Fix ``Variant`` and other implementations of ``IFromObject`` to stop
+  passing known non-text values to ``fromUnicode`` methods. This only
+  worked with certain fields (such as ``zope.schema.Number``) that
+  could accept non-text values, usually by implementation accident,
+  and could have surprising consequences. Instead, non-text values
+  will be passed to the ``validate`` method.
 
+- Fix ``Variant`` to stop double-validating values. The underlying
+  ``fromUnicode``, ``fromBytes`` or ``fromObject`` methods were
+  supposed to already validate.
 
 1.9.1 (2018-10-03)
 ==================

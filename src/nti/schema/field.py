@@ -345,7 +345,7 @@ class _FieldConverter(object):
         # pylint:disable=too-many-function-args
 
         # Take make it easier on implementers of fromObject,
-        # if the also implement fromBytes/fromUnicode, we call those
+        # if they also implement fromBytes/fromUnicode, we call those
         # first.
         if isinstance(value, bytes) and self.fromBytes is not None:
             return self.fromBytes(value)
@@ -356,24 +356,18 @@ class _FieldConverter(object):
         if self.fromObject is not None:
             return self.fromObject(value)
 
-        if self.fromUnicode is not None:
-            # Hoping for strings at this point.
-            # for BWC, we always call this method.
-            try:
-                return self.fromUnicode(value)
-            except AttributeError:
-                # Something went wrong. Was the value None or not a string? In that
-                # case we can raise a better error. Otherwise, it's probably some sort of
-                # implementation bug and we want to let this propagate.
-                if isinstance(value, (bytes, text_type)):
-                    raise
-
-        raise sch_interfaces.WrongType(
-            value,
-            getattr(self.field, '_type', None), # pylint:disable=protected-access
-            getattr(self.field, '__name__', None),
-        ).with_field_and_value(self.field, value)
-
+        # Last resort, see if it can be validated by the field as-is.
+        # Let this raise whatever error it wants to, but be sure
+        # validation errors have the details filled in.
+        try:
+            self.field.validate(value)
+            return value
+        except sch_interfaces.ValidationError as ex:
+            if ex.field is None:
+                ex.field = self.field
+            if ex.value is None:
+                ex.value = value
+            raise
 
 
 @interface.implementer(IVariant)
@@ -503,19 +497,14 @@ class Variant(FieldValidationMixin, schema.Field):
             try:
                 converter = _FieldConverter(field)
 
-                # Try to convert and validate
-                adapted = converter(obj)
+                # Try to convert and validate. This calls fromXXX
+                # if defined, and otherwise validates. The fromXXX methods
+                # are also supposed to validate, so validation should be done
+                # when this returns.
+                return converter(obj)
             except (TypeError, sch_interfaces.ValidationError) as ex:
                 # Nope, no good
                 errors.append(ex)
-            else:
-                # We got one that likes the type. Do the validation
-                # now, and then return if successful.
-                try:
-                    field.validate(adapted)
-                    return adapted
-                except sch_interfaces.ValidationError as ex: # pragma: no cover
-                    errors.append(ex)
 
         # We get here if nothing worked.
         if obj == self.missing_value:
