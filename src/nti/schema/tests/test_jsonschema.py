@@ -39,6 +39,7 @@ from hamcrest import is_
 from hamcrest import has_length
 from hamcrest import has_key
 from hamcrest import is_not
+from hamcrest import same_instance
 does_not = is_not
 
 
@@ -48,7 +49,45 @@ __docformat__ = "restructuredtext en"
 #disable: accessing protected members, too many methods
 #pylint: disable=W0212,R0904,inherit-non-class,no-method-argument
 
+class TranslateTestSchema(jsonschema.JsonSchemafier):
+
+    def _translate(self, text):
+        return text + self.context
+
+
 class TestJsonSchemafier(unittest.TestCase):
+
+    def test_application_info(self):
+
+        app_info = {
+            'text_key': u'a value',
+            'byte_key': b'bytes',
+            'int_key': 7,
+            'list_key': [42,]
+        }
+
+        class IA(Interface):
+
+            field = Attribute("A field")
+            field.setTaggedValue(jsonschema.TAG_APPLICATION_INFO, app_info)
+
+        schema = TranslateTestSchema(IA, context=u' TEST').make_schema()
+
+        assert_that(schema, has_key("field"))
+        field = schema['field']
+        assert_that(field, has_key("application_info"))
+        # The dict itself was copied
+        assert_that(field['application_info'], is_not(same_instance(app_info)))
+        # as were its contents
+        assert_that(field['application_info'], has_entry('list_key', is_([42])))
+        assert_that(field['application_info'],
+                    has_entry('list_key', is_not(same_instance(app_info['list_key']))))
+
+        # Text strings were translated
+        assert_that(field['application_info'], has_entry('text_key', u'a value TEST'))
+
+        # Byte strings were not (is that even legel in json?)
+        assert_that(field['application_info'], has_entry('byte_key', b'bytes'))
 
     def test_excludes(self):
 
@@ -85,11 +124,6 @@ class TestJsonSchemafier(unittest.TestCase):
     def test_type_from_types(self):
         from zope.schema import Object
         from nti.schema.field import Variant
-
-        class TranslateTestSchema(jsonschema.JsonSchemafier):
-
-            def _translate(self, text):
-                return text + self.context
 
         def _assert_type(t, name='field',
                          **kwargs):

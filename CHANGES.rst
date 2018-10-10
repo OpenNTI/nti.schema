@@ -3,12 +3,15 @@
 =========
 
 
-1.11.1 (unreleased)
+1.12.0 (unreleased)
 ===================
 
 - JSON schemas report the schema for ``IObject`` fields
   and the schemas for the possible fields in ``IVariant``.
 
+- Fields in JSON schemas may specify a JSON-serializable dictionary
+  to be passed as the ``application_info`` schema value. See `issue 44
+  <https://github.com/NextThought/nti.schema/issues/44>`_.
 
 1.11.0 (2018-10-10)
 ===================
