@@ -79,22 +79,30 @@ class TestJsonSchemafier(unittest.TestCase):
 
     def test_type_from_types(self):
 
-        def _assert_type(t, name='field', base_type=None):
-            schema = jsonschema.JsonSchemafier(IA).make_schema()
+        class TranslateTestSchema(jsonschema.JsonSchemafier):
+
+            def _translate(self, text):
+                return text + self.context
+
+        def _assert_type(t, name='field',
+                         **kwargs):
+            schema = TranslateTestSchema(IA, context=' TEST').make_schema()
             assert_that(schema, has_entry(name, has_entry('type', t)))
-            if base_type:
-                assert_that(schema, has_entry(name, has_entry('base_type', base_type)))
+            for nested_name, matcher in kwargs.items():
+                assert_that(schema, has_entry(name, has_entry(nested_name, matcher)))
+
             return schema
 
         class IA(Interface):
 
             field = Attribute("A field")
 
-            field2 = DecodingValidTextLine()
+            field2 = DecodingValidTextLine(title=u'A title',
+                                           description=u'A description')
 
-            list_field = List()
-            list_or_tuple_field = ListOrTuple()
-            dict_field = Dict()
+            list_field = List(DecodingValidTextLine())
+            list_or_tuple_field = ListOrTuple(Real())
+            dict_field = Dict(DecodingValidTextLine(), Real())
             mapping_field = Mapping()
             mmapping_field = MutableMapping()
             sequence_field = Sequence()
@@ -128,20 +136,24 @@ class TestJsonSchemafier(unittest.TestCase):
         IA['field']._type = bool
         _assert_type('bool')
 
-        schema = _assert_type('string', 'field2')
-        assert_that(schema, has_entry('field2', has_entry('base_type', 'string')))
+        schema = _assert_type('string', 'field2',
+                              base_type='string',
+                              title=u'A title TEST',
+                              description=u'A description TEST')
 
-        _assert_type('list', 'list_field')
+        _assert_type('list', 'list_field', value_type=has_entry('type', 'string'))
         _assert_type('list', 'list_or_tuple_field')
         _assert_type('list', 'sequence_field')
         _assert_type('list', 'msequence_field')
         _assert_type('list', 'iiterable_field')
 
-        _assert_type('dict', 'dict_field')
+        _assert_type('dict', 'dict_field',
+                     key_type=has_entry('type', 'string'),
+                     value_type=has_entry('type', 'Real'))
         _assert_type('dict', 'mapping_field')
         _assert_type('dict', 'mmapping_field')
 
-        _assert_type('Real', 'real_field', 'float')
-        _assert_type('Rational', 'rational_field', 'float')
-        _assert_type('Complex', 'complex_field', 'float')
-        _assert_type('Integral', 'integral_field', 'int')
+        _assert_type('Real', 'real_field', base_type='float')
+        _assert_type('Rational', 'rational_field', base_type='float')
+        _assert_type('Complex', 'complex_field', base_type='float')
+        _assert_type('Integral', 'integral_field', base_type='int')

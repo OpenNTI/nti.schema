@@ -6,7 +6,13 @@
 1.10.1 (unreleased)
 ===================
 
-- Nothing changed yet.
+- JSON schemas now include nested ``value_type`` and ``key_type`` for
+  collection and mapping fields. See `issue 42
+  <https://github.com/NextThought/nti.schema/issues/42>`_.
+
+- JSON schemas now include (translated) ``title`` and ``description``
+  values for fields. See `issue 41
+  <https://github.com/NextThought/nti.schema/issues/41>`_.
 
 
 1.10.0 (2018-10-04)
