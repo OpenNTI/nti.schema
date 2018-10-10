@@ -3,7 +3,7 @@
 =========
 
 
-1.10.1 (unreleased)
+1.11.0 (2018-10-10)
 ===================
 
 - JSON schemas now include nested ``value_type`` and ``key_type`` for
