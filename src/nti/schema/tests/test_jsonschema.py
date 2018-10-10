@@ -37,6 +37,9 @@ from hamcrest import assert_that
 from hamcrest import has_entry
 from hamcrest import is_
 from hamcrest import has_length
+from hamcrest import has_key
+from hamcrest import is_not
+does_not = is_not
 
 
 __docformat__ = "restructuredtext en"
@@ -102,6 +105,8 @@ class TestJsonSchemafier(unittest.TestCase):
             text_field = DecodingValidTextLine(title=u'nested text',
                                                min_length=5)
 
+            hidden_text_field = DecodingValidTextLine()
+
         class IUnderlyingB(Interface):
 
             int_field = Integral()
@@ -128,7 +133,11 @@ class TestJsonSchemafier(unittest.TestCase):
             integral_field = Integral()
 
             object_field = Object(IUnderlyingA, required=True)
-            variant_field = Variant([Object(IUnderlyingA), Object(IUnderlyingB)])
+            variant_field = Variant([Object(IUnderlyingA),
+                                     Object(IUnderlyingB),
+                                     DecodingValidTextLine()])
+
+            hidden_object_field = Object(IUnderlyingA, required=True)
 
         IA['field']._type = str
         _assert_type('string')
@@ -177,7 +186,29 @@ class TestJsonSchemafier(unittest.TestCase):
         _assert_type('Object', 'object_field',
                      value_schema=has_entry('text_field', has_entry('min_length', 5)))
 
+        # Now hiding some fields
+        # Top-level fields can be hidden
+        IA['hidden_object_field'].setTaggedValue(jsonschema.TAG_HIDDEN_IN_UI, True)
+
+        # Fields of a schema nested in an object can be hidden.
+        IUnderlyingA['hidden_text_field'].setTaggedValue(jsonschema.TAG_HIDDEN_IN_UI, True)
+
+        # A field of a variant can be hidden
+        IA['variant_field'].fields[2].setTaggedValue(jsonschema.TAG_HIDDEN_IN_UI, True)
+        # All fields of lists and dicts can be hidden.
+        IA['dict_field'].key_type.setTaggedValue(jsonschema.TAG_HIDDEN_IN_UI, True)
+        IA['dict_field'].value_type.setTaggedValue(jsonschema.TAG_HIDDEN_IN_UI, True)
+        IA['list_field'].value_type.setTaggedValue(jsonschema.TAG_HIDDEN_IN_UI, True)
+
+
         schema = _assert_type('Variant', 'variant_field',
                               value_type_options=has_length(2))
         variant_schema_values = schema['variant_field']['value_type_options']
         assert_that(variant_schema_values[0], has_entry('type', 'Object'))
+
+        assert_that(schema, does_not(has_key('hidden_object_field')))
+        assert_that(schema['object_field']['value_schema'], does_not(has_key('hidden_text_field')))
+
+        assert_that(schema['list_field'], has_entry('value_type', None))
+        assert_that(schema['dict_field'], has_entry('value_type', None))
+        assert_that(schema['dict_field'], has_entry('key_type', None))

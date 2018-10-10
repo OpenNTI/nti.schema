@@ -178,7 +178,15 @@ class JsonSchemafier(object):
 
     def allow_field(self, name, field):
         """
-        Return if the field is allowed in the external schema
+        Return if the field is allowed in the external schema.
+
+        By default, this checks to see if the field has a true value for the
+        tag `TAG_HIDDEN_IN_UI`, or if the field's name starts with an underscore.
+
+        .. versionchanged:: 1.12.0
+           This will now be called for nested fields, such as the ``value_type`` or
+           ``key_type`` of collections and mappings. In those cases, commonly the name will
+           be the empty string.
         """
         if field.queryTaggedValue(TAG_HIDDEN_IN_UI) or name.startswith('_'):
             return False
@@ -218,8 +226,6 @@ class JsonSchemafier(object):
             are strings and the values are strings, bools, numbers, or lists of primitives.
             Will be suitable for writing to JSON.
         """
-
-
         ext_schema = {}
         for k, v in self._iter_names_and_descriptions():
             __traceback_info__ = k, v
@@ -227,9 +233,11 @@ class JsonSchemafier(object):
                 continue
             # v could be a schema field or an interface.Attribute
             if not self.allow_field(k, v):
+                # If we disallow at the top level, we don't even
+                # hint to its existence.
                 continue
 
-            item_schema = self._make_field_schema(v)
+            item_schema = self._make_field_schema(v, k)
 
             self.post_process_field(k, v, item_schema)
             ext_schema[k] = item_schema
@@ -241,7 +249,13 @@ class JsonSchemafier(object):
 
     def _make_field_schema(self, field, name=None):
         if field is None:
-            return {} # No constraints. Typical for a value_type or key_type
+            return None # No constraints. Typical for a value_type or key_type
+
+        name = name or field.__name__ or ''
+        if not self.allow_field(name, field):
+            # Disallowed, but we're already expecting a return value to put
+            # in a dictionary.
+            return None
 
         required = getattr(field, 'required', None)
         required = field.queryTaggedValue(TAG_REQUIRED_IN_UI) or required
@@ -254,7 +268,7 @@ class JsonSchemafier(object):
 
         ui_base_type = None
         item_schema = {
-            'name': name or field.__name__,
+            'name': name,
             'required': required,
             'readonly': readonly,
             'min_length': getattr(field, 'min_length', None),
@@ -279,6 +293,12 @@ class JsonSchemafier(object):
         item_schema['type'] = ui_type
         item_schema['base_type'] = ui_base_type
 
+        # Now add supplemental information about nested data.
+        # Note that we're consistent to always provide *something*
+        # for these optional keys, if they are expected to be there based on the
+        # type of the field, it just may be None if it was excluded (or empty,
+        # if all variants were excluded).
+
         if sch_interfaces.IChoice.providedBy(field):
             choices, base_type = self.get_data_from_choice_field(field, ui_base_type)
             item_schema['choices'] = choices
@@ -300,6 +320,7 @@ class JsonSchemafier(object):
                 self._make_field_schema(the_field)
                 for the_field
                 in field.fields
+                if self.allow_field(the_field.__name__, the_field)
             ]
 
         return item_schema
