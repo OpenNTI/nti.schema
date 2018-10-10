@@ -22,6 +22,7 @@ except ImportError: # pragma: no cover
 
 from six import integer_types
 from six import string_types
+from zope.i18n import translate
 from zope.interface.interfaces import IMethod
 from zope.schema import interfaces as sch_interfaces
 from zope.schema import vocabulary as sch_vocabulary
@@ -153,16 +154,18 @@ _process_choice_field = process_choice_field = get_data_from_choice_field
 
 class JsonSchemafier(object):
 
-    def __init__(self, schema, readonly_override=None):
+    def __init__(self, schema, readonly_override=None, context=None):
         """
         Create a new schemafier.
 
         :param schema: The zope schema to use.
         :param bool readonly_override: If given, a boolean value that will replace all
             readonly values in the schema.
+        :param context: The context passed to :func:`zope.i18n.translate`
         """
         self.schema = schema
         self.readonly_override = readonly_override
+        self.context = context
 
     def _iter_names_and_descriptions(self):
         """
@@ -208,7 +211,7 @@ class JsonSchemafier(object):
             are strings and the values are strings, bools, numbers, or lists of primitives.
             Will be suitable for writing to JSON.
         """
-        readonly_override = self.readonly_override
+
 
         ext_schema = {}
         for k, v in self._iter_names_and_descriptions():
@@ -219,38 +222,66 @@ class JsonSchemafier(object):
             if not self.allow_field(k, v):
                 continue
 
-            required = getattr(v, 'required', None)
-            required = v.queryTaggedValue(TAG_REQUIRED_IN_UI) or required
-
-            if readonly_override is not None:
-                readonly = readonly_override
-            else:
-                readonly = getattr(v, 'readonly', False)
-                readonly = v.queryTaggedValue(TAG_READONLY_IN_UI) or readonly
-
-            ui_base_type = None
-            item_schema = {
-                'name': k,
-                'required': required,
-                'readonly': readonly,
-                'min_length': getattr(v, 'min_length', None),
-                'max_length': getattr(v, 'max_length', None)
-            }
-            ui_type = v.queryTaggedValue(TAG_UI_TYPE)
-            if not ui_type:
-                ui_type, ui_base_type = self.get_ui_types_from_field(v)
-            else:
-                _, ui_base_type = self.get_ui_types_from_field(v)
-
-            item_schema['type'] = ui_type
-            item_schema['base_type'] = ui_base_type
-
-            if sch_interfaces.IChoice.providedBy(v):
-                choices, base_type = self.get_data_from_choice_field(v, ui_base_type)
-                item_schema['choices'] = choices
-                item_schema['base_type'] = base_type
+            item_schema = self._make_field_schema(v)
 
             self.post_process_field(k, v, item_schema)
             ext_schema[k] = item_schema
 
         return ext_schema
+
+    def _translate(self, text):
+        return translate(text, context=self.context)
+
+    def _make_field_schema(self, field, name=None):
+        if field is None:
+            return {} # No constraints. Typical for a value_type or key_type
+
+        required = getattr(field, 'required', None)
+        required = field.queryTaggedValue(TAG_REQUIRED_IN_UI) or required
+        readonly_override = self.readonly_override
+        if readonly_override is not None:
+            readonly = readonly_override
+        else:
+            readonly = getattr(field, 'readonly', False)
+            readonly = field.queryTaggedValue(TAG_READONLY_IN_UI) or readonly
+
+        ui_base_type = None
+        item_schema = {
+            'name': name or field.__name__,
+            'required': required,
+            'readonly': readonly,
+            'min_length': getattr(field, 'min_length', None),
+            'max_length': getattr(field, 'max_length', None)
+        }
+
+        # Now things that we translate and presumably display to the user.
+        # Note that `field` is not necessarily an IField, it could be a simple
+        # Attribute
+        for attr in ('title', 'description'):
+            val = getattr(field, attr, None)
+            if val is not None:
+                item_schema[attr] = self._translate(val)
+
+
+        ui_type = field.queryTaggedValue(TAG_UI_TYPE)
+        if not ui_type:
+            ui_type, ui_base_type = self.get_ui_types_from_field(field)
+        else:
+            _, ui_base_type = self.get_ui_types_from_field(field)
+
+        item_schema['type'] = ui_type
+        item_schema['base_type'] = ui_base_type
+
+        if sch_interfaces.IChoice.providedBy(field):
+            choices, base_type = self.get_data_from_choice_field(field, ui_base_type)
+            item_schema['choices'] = choices
+            item_schema['base_type'] = base_type
+
+        if sch_interfaces.ICollection.providedBy(field):
+            item_schema['value_type'] = self._make_field_schema(field.value_type)
+
+        elif sch_interfaces.IMapping.providedBy(field):
+            item_schema['value_type'] = self._make_field_schema(field.value_type)
+            item_schema['key_type'] = self._make_field_schema(field.key_type)
+
+        return item_schema
