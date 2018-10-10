@@ -14,6 +14,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from copy import copy
+
 try:
     from collections.abc import Sequence
 except ImportError: # pragma: no cover
@@ -22,6 +24,8 @@ except ImportError: # pragma: no cover
 
 from six import integer_types
 from six import string_types
+from six import text_type
+
 from zope.i18n import translate
 from zope.interface.interfaces import IMethod
 from zope.schema import interfaces as sch_interfaces
@@ -46,9 +50,24 @@ TAG_REQUIRED_IN_UI = 'nti.dataserver.users.field_required'
 #: Overrides the value from the field itself, if true
 TAG_READONLY_IN_UI = 'nti.dataserver.users.field_readonly'
 
+#: A tagged value that echos semi-arbitrary data back in the schema
+#: under the key ``application_info``.
+#:
+#: The value for this field *must* be a mapping object whose keys
+#: are strings and whose values are JSON serializable. Text values
+#: (specifically `zope.i18nmessageid.Message` objects) will be translated
+#: when put into the schema. The object in the schema *will not* be the object
+#: in the tagged value, and constituent composite values will also be copied.
+#: (In case any post-processing of the schema is done based on current user,
+#: request or site, this isolates such modifications.)
+#:
+#: .. versionadded:: 1.12.0
+TAG_APPLICATION_INFO = 'nti.schema.jsonschema.field_application_info'
+
 # Known types
 #: The email type
 UI_TYPE_EMAIL = 'nti.dataserver.users.interfaces.EmailAddress'
+
 #: An email type that is stored as a non-recoverable hash.
 #: The value is chosen so that a begins-with test will match
 #: either this or :const:`UI_TYPE_EMAIL`, making validation easier
@@ -153,13 +172,14 @@ def get_data_from_choice_field(v, base_type=None):
     return choices, base_type
 _process_choice_field = process_choice_field = get_data_from_choice_field
 
+
 class JsonSchemafier(object):
 
     def __init__(self, schema, readonly_override=None, context=None):
         """
         Create a new schemafier.
 
-        :param schema: The zope schema to use.
+        :param schema: The zope schema (interface) to use.
         :param bool readonly_override: If given, a boolean value that will replace all
             readonly values in the schema.
         :param context: The context passed to :func:`zope.i18n.translate`
@@ -294,6 +314,7 @@ class JsonSchemafier(object):
         item_schema['base_type'] = ui_base_type
 
         # Now add supplemental information about nested data.
+
         # Note that we're consistent to always provide *something*
         # for these optional keys, if they are expected to be there based on the
         # type of the field, it just may be None if it was excluded (or empty,
@@ -322,5 +343,12 @@ class JsonSchemafier(object):
                 in field.fields
                 if self.allow_field(the_field.__name__, the_field)
             ]
+
+        application_info = field.queryTaggedValue(TAG_APPLICATION_INFO) or {}
+        item_schema['application_info'] = {
+            k: self._translate(v) if isinstance(v, text_type) else copy(v)
+            for k, v in application_info.items()
+        }
+
 
         return item_schema
