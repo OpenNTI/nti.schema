@@ -36,6 +36,8 @@ from ..field import MutableMapping
 from hamcrest import assert_that
 from hamcrest import has_entry
 from hamcrest import is_
+from hamcrest import has_length
+
 
 __docformat__ = "restructuredtext en"
 
@@ -78,6 +80,8 @@ class TestJsonSchemafier(unittest.TestCase):
         assert_that(schema, has_entry('field', has_entry('type', 'MyType')))
 
     def test_type_from_types(self):
+        from zope.schema import Object
+        from nti.schema.field import Variant
 
         class TranslateTestSchema(jsonschema.JsonSchemafier):
 
@@ -92,6 +96,15 @@ class TestJsonSchemafier(unittest.TestCase):
                 assert_that(schema, has_entry(name, has_entry(nested_name, matcher)))
 
             return schema
+
+        class IUnderlyingA(Interface):
+
+            text_field = DecodingValidTextLine(title=u'nested text',
+                                               min_length=5)
+
+        class IUnderlyingB(Interface):
+
+            int_field = Integral()
 
         class IA(Interface):
 
@@ -113,6 +126,9 @@ class TestJsonSchemafier(unittest.TestCase):
             rational_field = Rational()
             complex_field = Complex()
             integral_field = Integral()
+
+            object_field = Object(IUnderlyingA, required=True)
+            variant_field = Variant([Object(IUnderlyingA), Object(IUnderlyingB)])
 
         IA['field']._type = str
         _assert_type('string')
@@ -136,10 +152,10 @@ class TestJsonSchemafier(unittest.TestCase):
         IA['field']._type = bool
         _assert_type('bool')
 
-        schema = _assert_type('string', 'field2',
-                              base_type='string',
-                              title=u'A title TEST',
-                              description=u'A description TEST')
+        _assert_type('string', 'field2',
+                     base_type='string',
+                     title=u'A title TEST',
+                     description=u'A description TEST')
 
         _assert_type('list', 'list_field', value_type=has_entry('type', 'string'))
         _assert_type('list', 'list_or_tuple_field')
@@ -157,3 +173,11 @@ class TestJsonSchemafier(unittest.TestCase):
         _assert_type('Rational', 'rational_field', base_type='float')
         _assert_type('Complex', 'complex_field', base_type='float')
         _assert_type('Integral', 'integral_field', base_type='int')
+
+        _assert_type('Object', 'object_field',
+                     value_schema=has_entry('text_field', has_entry('min_length', 5)))
+
+        schema = _assert_type('Variant', 'variant_field',
+                              value_type_options=has_length(2))
+        variant_schema_values = schema['variant_field']['value_type_options']
+        assert_that(variant_schema_values[0], has_entry('type', 'Object'))

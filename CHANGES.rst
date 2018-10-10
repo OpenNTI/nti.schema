@@ -6,7 +6,8 @@
 1.11.1 (unreleased)
 ===================
 
-- Nothing changed yet.
+- JSON schemas report the schema for ``IObject`` fields
+  and the schemas for the possible fields in ``IVariant``.
 
 
 1.11.0 (2018-10-10)

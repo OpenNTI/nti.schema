@@ -27,6 +27,7 @@ from zope.interface.interfaces import IMethod
 from zope.schema import interfaces as sch_interfaces
 from zope.schema import vocabulary as sch_vocabulary
 
+from nti.schema.interfaces import IVariant
 from nti.schema.interfaces import find_most_derived_interface
 
 __docformat__ = "restructuredtext en"
@@ -200,6 +201,12 @@ class JsonSchemafier(object):
     def post_process_field(self, name, field, item_schema):
         pass
 
+    def bind(self, schema):
+        clone = self.__class__.__new__(self.__class__)
+        clone.__dict__.update(self.__dict__)
+        clone.schema = schema
+        return clone
+
     def make_schema(self):
         """
         Create the JSON schema.
@@ -259,7 +266,7 @@ class JsonSchemafier(object):
         # Attribute
         for attr in ('title', 'description'):
             val = getattr(field, attr, None)
-            if val is not None:
+            if val is not None and val:
                 item_schema[attr] = self._translate(val)
 
 
@@ -283,5 +290,16 @@ class JsonSchemafier(object):
         elif sch_interfaces.IMapping.providedBy(field):
             item_schema['value_type'] = self._make_field_schema(field.value_type)
             item_schema['key_type'] = self._make_field_schema(field.key_type)
+
+        elif sch_interfaces.IObject.providedBy(field):
+            schemafier = self.bind(field.schema)
+            item_schema['value_schema'] = schemafier.make_schema()
+
+        elif IVariant.providedBy(field):
+            item_schema['value_type_options'] = [
+                self._make_field_schema(the_field)
+                for the_field
+                in field.fields
+            ]
 
         return item_schema
