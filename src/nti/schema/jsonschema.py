@@ -22,12 +22,17 @@ except ImportError: # pragma: no cover
     # Python 2
     from collections import Sequence
 
+from numbers import Number
+
 from six import integer_types
 from six import string_types
 from six import text_type
 
 from zope.i18n import translate
+
 from zope.interface.interfaces import IMethod
+from zope.interface.interfaces import IInterface
+
 from zope.schema import interfaces as sch_interfaces
 from zope.schema import vocabulary as sch_vocabulary
 
@@ -268,9 +273,6 @@ class JsonSchemafier(object):
         return translate(text, context=self.context)
 
     def _make_field_schema(self, field, name=None):
-        if field is None:
-            return None # No constraints. Typical for a value_type or key_type
-
         name = name or field.__name__ or ''
         if not self.allow_field(name, field):
             # Disallowed, but we're already expecting a return value to put
@@ -291,18 +293,7 @@ class JsonSchemafier(object):
             'name': name,
             'required': required,
             'readonly': readonly,
-            'min_length': getattr(field, 'min_length', None),
-            'max_length': getattr(field, 'max_length', None)
         }
-
-        # Now things that we translate and presumably display to the user.
-        # Note that `field` is not necessarily an IField, it could be a simple
-        # Attribute
-        for attr in ('title', 'description'):
-            val = getattr(field, attr, None)
-            if val is not None and val:
-                item_schema[attr] = self._translate(val)
-
 
         ui_type = field.queryTaggedValue(TAG_UI_TYPE)
         if not ui_type:
@@ -325,18 +316,9 @@ class JsonSchemafier(object):
             item_schema['choices'] = choices
             item_schema['base_type'] = base_type
 
-        if sch_interfaces.ICollection.providedBy(field):
-            item_schema['value_type'] = self._make_field_schema(field.value_type)
-
-        elif sch_interfaces.IMapping.providedBy(field):
-            item_schema['value_type'] = self._make_field_schema(field.value_type)
-            item_schema['key_type'] = self._make_field_schema(field.key_type)
-
-        elif sch_interfaces.IObject.providedBy(field):
-            schemafier = self.bind(field.schema)
-            item_schema['value_schema'] = schemafier.make_schema()
-
-        elif IVariant.providedBy(field):
+        if IVariant.providedBy(field):
+            # 'fields' is not actually declared in the IVariant
+            # interface; that's ok, we couldn't handle it automatically anyway.
             item_schema['value_type_options'] = [
                 self._make_field_schema(the_field)
                 for the_field
@@ -350,5 +332,45 @@ class JsonSchemafier(object):
             for k, v in application_info.items()
         }
 
+        self._fill_field_values(item_schema, field)
 
         return item_schema
+
+    def _fill_field_values(self, item_schema, field,
+                           # Certain things from IField that we exclude
+                           # because they are not useful externally or may
+                           # expose sensitive information. `validate_invariants`
+                           # is from the Object field.
+                           # TODO: What if we tagged these values on import with TAG_HIDDEN_IN_UI
+                           # and checked for that here?
+                           _excluded=('missing_value', 'default', 'validate_invariants'),
+                           # For safety, we'll refuse to output a value we don't understand.
+                           # We expect dicts to have come from us, creating schemas.
+                           _allowed_value_types=string_types + (Number, type(None), dict)):
+        derived_field_iface = find_most_derived_interface(field, sch_interfaces.IField)
+        if not derived_field_iface or derived_field_iface is sch_interfaces.IField:
+            return
+
+        # Take anything it has as a primitive, query it, and put it in the schema.
+        for name, field_field in derived_field_iface.namesAndDescriptions(all=True):
+            if name in item_schema or name in _excluded:
+                # Cheap test first: if we've already got it, ignore it
+                continue
+            if not sch_interfaces.IField.providedBy(field_field):
+                continue
+
+            # A few things we handle specially.
+            value = field_field.query(field)
+            if sch_interfaces.IField.providedBy(value):
+                # It is another field, yay, like value_type or key_type,
+                # so we need to recurse
+                value = self._make_field_schema(value)
+            elif IInterface.providedBy(value):
+                schemafier = self.bind(value)
+                value = schemafier.make_schema()
+            elif isinstance(value, text_type):
+                value = self._translate(value)
+
+            if not isinstance(value, _allowed_value_types):
+                continue # pragma: no cover
+            item_schema[name] = value

@@ -40,6 +40,7 @@ from hamcrest import has_length
 from hamcrest import has_key
 from hamcrest import is_not
 from hamcrest import same_instance
+from hamcrest import none
 does_not = is_not
 
 
@@ -203,7 +204,8 @@ class TestJsonSchemafier(unittest.TestCase):
         _assert_type('list', 'list_field', value_type=has_entry('type', 'string'))
         _assert_type('list', 'list_or_tuple_field')
         _assert_type('list', 'sequence_field')
-        _assert_type('list', 'msequence_field')
+        _assert_type('list', 'msequence_field',
+                     unique=False, value_type=none(), min_length=0, max_length=none())
         _assert_type('list', 'iiterable_field')
 
         _assert_type('dict', 'dict_field',
@@ -213,12 +215,13 @@ class TestJsonSchemafier(unittest.TestCase):
         _assert_type('dict', 'mmapping_field')
 
         _assert_type('Real', 'real_field', base_type='float')
-        _assert_type('Rational', 'rational_field', base_type='float')
+        _assert_type('Rational', 'rational_field',
+                     base_type='float', max=none(), min=none())
         _assert_type('Complex', 'complex_field', base_type='float')
         _assert_type('Integral', 'integral_field', base_type='int')
 
         _assert_type('Object', 'object_field',
-                     value_schema=has_entry('text_field', has_entry('min_length', 5)))
+                     schema=has_entry('text_field', has_entry('min_length', 5)))
 
         # Now hiding some fields
         # Top-level fields can be hidden
@@ -241,7 +244,7 @@ class TestJsonSchemafier(unittest.TestCase):
         assert_that(variant_schema_values[0], has_entry('type', 'Object'))
 
         assert_that(schema, does_not(has_key('hidden_object_field')))
-        assert_that(schema['object_field']['value_schema'], does_not(has_key('hidden_text_field')))
+        assert_that(schema['object_field']['schema'], does_not(has_key('hidden_text_field')))
 
         assert_that(schema['list_field'], has_entry('value_type', None))
         assert_that(schema['dict_field'], has_entry('value_type', None))
