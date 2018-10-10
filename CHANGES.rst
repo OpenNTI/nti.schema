@@ -13,6 +13,9 @@
   to be passed as the ``application_info`` schema value. See `issue 44
   <https://github.com/NextThought/nti.schema/issues/44>`_.
 
+- JSON schemas now output more constraints automatically. See `issue
+  47 <https://github.com/NextThought/nti.schema/pull/48>`_.
+
 1.11.0 (2018-10-10)
 ===================
 
