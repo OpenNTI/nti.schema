@@ -3,7 +3,7 @@
 =========
 
 
-1.12.0 (unreleased)
+1.12.0 (2018-10-10)
 ===================
 
 - JSON schemas report the schema for ``IObject`` fields
