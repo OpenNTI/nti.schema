@@ -3,11 +3,11 @@
 =========
 
 
-1.12.1 (unreleased)
+1.13.0(unreleased)
 ===================
 
-- Nothing changed yet.
-
+- Add ``StrippedValidTextLine`` field to strip leading/trailing
+  whitespace from values.
 
 1.12.0 (2018-10-10)
 ===================
