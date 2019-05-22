@@ -636,6 +636,8 @@ _is_stripped = re.compile(_is_stripped).match
 class StrippedValidTextLine(DecodingValidTextLine):
     """
     A text line that strips whitespace from incoming values.
+
+    .. versionadded:: 1.13.0
     """
 
     def fromUnicode(self, value):
