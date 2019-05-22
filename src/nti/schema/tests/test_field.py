@@ -586,7 +586,7 @@ class TestStrippedValidTextLine(unittest.TestCase):
             foo = FieldProperty(field)
 
         assert_that(field.fromUnicode(u' abc '), equal_to(u'abc'))
-        assert_that(field.fromBytes(' abc '), equal_to(u'abc'))
+        assert_that(field.fromBytes(b' abc '), equal_to(u'abc'))
         assert_that(calling(setattr).with_args(Thing(), 'foo', u' abc '), raises(InvalidValue))
 
         # Check valid case
