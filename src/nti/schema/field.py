@@ -74,6 +74,7 @@ from nti.schema.interfaces import BeforeTextAssignedEvent
 from nti.schema.interfaces import BeforeTextLineAssignedEvent
 from nti.schema.interfaces import IFromObject
 from nti.schema.interfaces import IListOrTuple
+from nti.schema.interfaces import InvalidValue
 from nti.schema.interfaces import IVariant
 from nti.schema.interfaces import VariantValidationError
 
@@ -113,6 +114,7 @@ __all__ = [
     'Real',
     'Set',
     'Sequence',
+    'StrippedValidTextLine',
     'Text',
     'TextLine',
     'Timedelta',
@@ -627,6 +629,26 @@ class DecodingValidTextLine(ValidTextLine):
 
     def fromBytes(self, value):
         return self.fromUnicode(value.decode('utf-8'))
+
+_is_stripped = r"\S.*\S$"  # non space at beginning and end
+_is_stripped = re.compile(_is_stripped).match
+
+class StrippedValidTextLine(DecodingValidTextLine):
+    """
+    A text line that strips whitespace from incoming values.
+    """
+
+    def fromUnicode(self, value):
+        v = value.strip() if value else value
+        result = super(StrippedValidTextLine, self).fromUnicode(v)
+        return result
+
+    def _validate(self, value):
+        super(StrippedValidTextLine, self)._validate(value)
+        if not value or _is_stripped(value):
+            return
+
+        raise InvalidValue(value).with_field_and_value(self, value)
 
 class ValidRegularExpression(ValidTextLine):
 
