@@ -3,7 +3,7 @@
 =========
 
 
-1.13.0(unreleased)
+1.13.0 (2019-05-22)
 ===================
 
 - Add ``StrippedValidTextLine`` field to strip leading/trailing
