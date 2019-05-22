@@ -12,11 +12,13 @@ from __future__ import print_function
 import unittest
 import warnings
 
-
 from zope.component import eventtesting
 
 from zope.interface.common import interfaces as cmn_interfaces
 from zope.schema import Dict
+
+from zope.schema.fieldproperty import FieldProperty
+
 from zope.schema.interfaces import ValidationError
 from zope.schema.interfaces import InvalidURI
 from zope.schema.interfaces import SchemaNotProvided
@@ -36,6 +38,7 @@ from nti.schema.field import ListOrTupleFromObject
 from nti.schema.field import Number
 from nti.schema.field import Object
 from nti.schema.field import ObjectLen
+from nti.schema.field import StrippedValidTextLine
 from nti.schema.field import TupleFromObject
 from nti.schema.field import UniqueIterable
 from nti.schema.field import ValidDatetime
@@ -44,6 +47,7 @@ from nti.schema.field import Variant
 from nti.schema.field import ValidTextLine as TextLine
 from nti.schema.interfaces import IBeforeDictAssignedEvent
 from nti.schema.interfaces import IBeforeSequenceAssignedEvent
+from nti.schema.interfaces import InvalidValue
 from nti.schema.interfaces import IVariant
 from nti.schema.interfaces import IFromObject
 from nti.schema.interfaces import VariantValidationError
@@ -63,6 +67,7 @@ from hamcrest import assert_that
 from hamcrest import calling
 from hamcrest import contains
 from hamcrest import contains_string
+from hamcrest import equal_to
 from hamcrest import has_length
 from hamcrest import has_property
 from hamcrest import is_
@@ -571,6 +576,21 @@ class TestIndexedIterable(unittest.TestCase):
         thing = Thing()
         field.set(thing, 'abc')
         assert_that(thing, has_property('foo', 'abc'))
+
+class TestStrippedValidTextLine(unittest.TestCase):
+
+    def test_stripped(self):
+        field = StrippedValidTextLine(__name__='foo')
+
+        class Thing(object):
+            foo = FieldProperty(field)
+
+        assert_that(field.fromUnicode(u' abc '), equal_to(u'abc'))
+        assert_that(field.fromBytes(' abc '), equal_to(u'abc'))
+        assert_that(calling(setattr).with_args(Thing(), 'foo', u' abc '), raises(InvalidValue))
+
+        # Check valid case
+        Thing().foo = u'abc'
 
 class TestDecodingValidTextLine(unittest.TestCase):
 
