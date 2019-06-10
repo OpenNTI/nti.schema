@@ -586,11 +586,15 @@ class TestStrippedValidTextLine(unittest.TestCase):
             foo = FieldProperty(field)
 
         assert_that(field.fromUnicode(u' abc '), equal_to(u'abc'))
+        assert_that(field.fromUnicode(u' a '), equal_to(u'a'))
         assert_that(field.fromBytes(b' abc '), equal_to(u'abc'))
         assert_that(calling(setattr).with_args(Thing(), 'foo', u' abc '), raises(InvalidValue))
+        assert_that(calling(setattr).with_args(Thing(), 'foo', u'abc '), raises(InvalidValue))
+        assert_that(calling(setattr).with_args(Thing(), 'foo', u' abc'), raises(InvalidValue))
 
         # Check valid case
         Thing().foo = u'abc'
+        Thing().foo = u'a'
 
 class TestDecodingValidTextLine(unittest.TestCase):
 
