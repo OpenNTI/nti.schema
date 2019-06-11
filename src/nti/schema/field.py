@@ -630,14 +630,23 @@ class DecodingValidTextLine(ValidTextLine):
     def fromBytes(self, value):
         return self.fromUnicode(value.decode('utf-8'))
 
-_is_stripped = r"\S.*\S$"  # non space at beginning and end
-_is_stripped = re.compile(_is_stripped).match
+
+_not_stripped = r"^\s|\s$"  # space at either beginning or end
+_not_stripped = re.compile(_not_stripped).search
+
+
+def _is_stripped(value):
+    return not _not_stripped(value)
+
 
 class StrippedValidTextLine(DecodingValidTextLine):
     """
     A text line that strips whitespace from incoming values.
 
     .. versionadded:: 1.13.0
+
+    .. versionchanged:: 1.13.1
+           Handle single character values correctly.
     """
 
     def fromUnicode(self, value):
