@@ -10,8 +10,8 @@
 1.13.0 (2019-05-22)
 ===================
 
-- Add ``StrippedValidTextLine`` field to strip leading/trailing
-  whitespace from values.
+- Ensure ``StrippedValidTextLine`` correctly recognizes single character values
+  as stripped. Previously, 'b' would have been rejected.
 
 1.12.0 (2018-10-10)
 ===================
