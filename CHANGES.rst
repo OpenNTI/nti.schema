@@ -2,7 +2,7 @@
  Changes
 =========
 
-1.13.1 (unreleased)
+1.13.1 (2019-06-11)
 ===================
 
 - ``StrippedValidTextLine`` should accept single character lines.
