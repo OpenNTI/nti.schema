@@ -5,7 +5,9 @@
 1.13.2 (unreleased)
 ===================
 
-- Nothing changed yet.
+- Test with zope.interface 5.0.0.
+
+- Add support for Python 3.8.
 
 
 1.13.1 (2019-06-11)

@@ -198,19 +198,22 @@ class TestSuperHash(unittest.TestCase):
         assert_that(hash(self.superhash([1, 2])), is_not(hash(self.superhash([2, 1]))))
 
     def test_nested_dict(self):
-        d = {1: 1,
-             2: [1, 2, 3],
-             3: {4: [4, 5, 6]}}
+        d = {
+            1: 1,
+            2: [1, 2, 3],
+            3: {4: [4, 5, 6]}
+        }
+        t = (
+            (1, 1),
+            (2, (1, 2, 3)),
+            (3, ((4, (4, 5, 6)),))
+        )
 
         assert_that(self.superhash(d),
-                    is_(
-                        ((1, 1),
-                         (2, (1, 2, 3)),
-                         (3, ((4, (4, 5, 6)),)))
-                    ))
+                    is_(t))
 
         assert_that(hash(self.superhash(d)),
-                    is_(-6213620179105025536))
+                    is_(hash(t)))
 
 
 def test_suite():
