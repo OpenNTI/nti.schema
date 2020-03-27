@@ -55,18 +55,20 @@ setup(
         'setuptools',
         'zope.event',
         'zope.interface >= 5.0.0',
-        'zope.schema >= 4.8.0',
-        'zope.i18n',
+        'zope.schema >= 6.0.0',
+        'zope.i18n >= 4.7.0',
         'zope.i18nmessageid',
-        'zope.vocabularyregistry',
+        'zope.vocabularyregistry >= 1.1.1',
         'zope.deprecation',
         'zope.deferredimport >= 4.2.1',
+        'zope.configuration >= 4.4.0', # consistent IRO
     ],
     extras_require={
         'test': [
             'pyhamcrest',
             'nti.testing',
             'zope.testrunner',
+            'zope.component >= 4.6.1', # consistent IRO
         ],
         'docs': [
             'Sphinx',
