@@ -2,10 +2,12 @@
  Changes
 =========
 
-1.13.2 (unreleased)
+1.14.0 (unreleased)
 ===================
 
-- Test with zope.interface 5.0.0.
+- Require zope.interface 5.0.0 and related dependencies.
+
+- Ensure all objects have consistent interface resolution orders.
 
 - Add support for Python 3.8.
 

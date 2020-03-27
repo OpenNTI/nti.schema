@@ -9,12 +9,16 @@ python:
   - pypy
   - pypy3
 
+env:
+  global:
+    ZOPE_INTERFACE_STRICT_IRO: 1
+
 script:
   - coverage run -m zope.testrunner --test-path=src  --auto-color --auto-progress
 after_success:
   - coveralls
 notifications:
-  email: dev-regression-tests@nextthought.com
+  email: false
 
 install:
   - pip install -U pip setuptools
