@@ -38,6 +38,8 @@ def schemadict(spec):
     The schema part (fields) of interface specification *spec* as map
     from name to field.
 
+    The return value should be treated as immutable.
+
     *spec* can be:
 
     - A single Interface;
@@ -45,13 +47,39 @@ def schemadict(spec):
       such as that returned by ``providedBy(instance)`` or ``implementedBy(factory)``
       (an Interface is a special case of this).
     - A list, tuple, or iterable of Interfaces.
+
+    In the first two cases, the results will be cached using the
+    usual interface caching rules. That means that changes to interface bases,
+    or changes to what an object or class provides or implements, will be properly
+    detected. However, if you simply assign a new field to an existing interface,
+    it may not be detected (things like ``Interface.get()`` also fail in that case)
+    unless you call ``Interface.changed()``.
+
+    .. versionchanged:: 1.15.0
+       Added caching and re-implemented the schemadict algorithm for speed.
     """
-    # ``zope.schema.getFields`` and ``getFieldsInOrder`` deal with a single
-    # interface, only. So in the past, we handled the latter two cases
-    # (which are the most common cases) by constructing a new interface
-    # at runtime using the *spec* as its bases. But that's *really* slow, especially
-    # if the hierarchy is complex. We can do a lot better if we pay attention to what
-    # we're given.
+    try:
+        cache_in = spec._v_attrs # pylint:disable=protected-access
+    except AttributeError:
+        # As of zope.interface 5.0, these are always there, so
+        # this must be just an iterable.
+        pass
+    else:
+        try:
+            return cache_in['__nti_schema_schemadict']
+        except TypeError:
+            assert cache_in is None
+            cache_in = spec._v_attrs = {}
+        except KeyError:
+            pass
+
+    # ``zope.schema.getFields`` and ``getFieldsInOrder`` deal with a
+    # single interface, only. So in the past, we handled the latter
+    # two cases (which are the most common cases, especially the
+    # ``providedBy`` case) by constructing a new interface at runtime
+    # using the *spec* as its bases. But that's *really* slow,
+    # especially if the hierarchy is complex. We can do a lot better
+    # if we pay attention to what we're given.
 
     # First, boil it down to a list of Interface objects, in resolution order.
     if IInterface.providedBy(spec):
@@ -76,6 +104,15 @@ def schemadict(spec):
             in iface.namesAndDescriptions()
             if name not in result and is_field(attr)
         )
+
+    # If we have somewhere to stick a cache, do so.
+    # Note that we don't look up _v_attrs again, just in case it changed
+    # concurrently.
+    try:
+        cache_in['__nti_schema_schemadict'] = result
+    except NameError:
+        pass
+
     return result
 
 

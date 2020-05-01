@@ -162,6 +162,76 @@ class TestSchemadict(unittest.TestCase):
             {'field1': IA['field1']}
         )
 
+    def _check_caching(self, IA, spec_getter, mutator):
+        schema = schemadict(spec_getter())
+        self.assertEqual(
+            schema,
+            {'field1': IA['field1']}
+        )
+
+        schema2 = schemadict(spec_getter())
+        self.assertIs(
+            schema,
+            schema2
+        )
+
+        mutator()
+
+        schema3 = schemadict(spec_getter())
+        self.assertIsNot(
+            schema,
+            schema3
+        )
+
+        self.assertEqual(
+            schema,
+            schema3
+        )
+
+    def test_single_interface_caching(self, make_v_attr_exist=False):
+        class IA(interface.Interface):
+            field1 = Number()
+
+        if make_v_attr_exist:
+            IA.get('field1')
+            self.assertIsNotNone(IA._v_attrs)
+        else:
+            self.assertIsNone(IA._v_attrs)
+
+        def spec_getter():
+            return IA
+
+        def mutator():
+            class IBase(interface.Interface):
+                pass
+
+            IA.__bases__ = (IBase,)
+
+        self._check_caching(IA, spec_getter, mutator)
+
+    def test_single_interface_caching_present(self):
+        self.test_single_interface_caching(True)
+
+    def test_provides_caching(self):
+        class IA(interface.Interface):
+            field1 = Number()
+
+        @interface.implementer(IA)
+        class A(object):
+            pass
+
+        a = A()
+
+        def spec_getter():
+            return interface.providedBy(a)
+
+        class IOther(interface.Interface):
+            pass
+        def mutator():
+            interface.classImplements(A, IOther)
+
+        self._check_caching(IA, spec_getter, mutator)
+
     def test_iterable(self):
         class IA(interface.Interface):
             field1 = Number()
@@ -175,7 +245,8 @@ class TestSchemadict(unittest.TestCase):
         class IC(IB):
             field1 = Number()
 
-        items = schemadict(iter((IA, IB, IC)))
+        schema = [IA, IB, IC]
+        items = schemadict(schema)
 
         assert_that(items, is_(
             dict([
@@ -184,3 +255,7 @@ class TestSchemadict(unittest.TestCase):
                 ('field3', IB['field3'])
             ])
         ))
+
+        # This can't be cached.
+        items2 = schemadict(schema)
+        self.assertIsNot(items, items2)
