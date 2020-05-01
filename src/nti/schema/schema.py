@@ -16,7 +16,8 @@ from zope.interface.interfaces import ISpecification
 from zope.interface import providedBy
 from zope.interface import implementer
 
-from zope.schema._bootstrapinterfaces import IValidatable
+from zope.schema.interfaces import IValidatable
+from zope.schema.fieldproperty import FieldProperty
 
 from .interfaces import ISchemaConfigured
 
@@ -35,10 +36,12 @@ def schemaitems(spec, _field_key=lambda x: x[1].order):
 
 def schemadict(spec):
     """
+    schemadict(spec) -> dict
+
     The schema part (fields) of interface specification *spec* as map
     from name to field.
 
-    The return value should be treated as immutable.
+    The return value *must* be treated as immutable.
 
     *spec* can be:
 
@@ -57,6 +60,7 @@ def schemadict(spec):
 
     .. versionchanged:: 1.15.0
        Added caching and re-implemented the schemadict algorithm for speed.
+       The return value must now be treated as immutable.
     """
     try:
         cache_in = spec._v_attrs # pylint:disable=protected-access
@@ -122,7 +126,27 @@ _marker = object()
 
 @implementer(ISchemaConfigured)
 class SchemaConfigured(object):
-    """Mixin class to provide configuration by the provided schema components."""
+    """
+    Mixin class to provide configuration by the provided schema
+    components.
+
+    This class is fastest if most of the attributes are represented
+    by ``FieldProperty`` objects.
+
+    .. versionchanged:: 1.15
+       Special case ``FieldProperty`` instances found in the type
+       when checking whether a value has been provided. We now assume
+       that if there is no matching item in the dict with the same name,
+       no value was provided. Note that if the schema field contained in the
+       ``FieldProperty`` did something funky in its ``bind()`` method to
+       this object, that will no longer happen at construction time.
+       This can be turned of by setting ``SC_OPTIMIZE_FIELD_PROPERTY`` to false.
+
+       If you add a FieldProperty to a ``SchemaConfigured`` class after an instance
+       has been created, you must call ``sc_changed``.
+    """
+
+    SC_OPTIMIZE_FIELD_PROPERTY = True
 
     def __init__(self, **kw):
         schema = schemadict(self.sc_schema_spec())
@@ -131,12 +155,72 @@ class SchemaConfigured(object):
             if k not in schema:
                 raise TypeError('non schema keyword argument: %s' % k)
             setattr(self, k, v)
-        # provide default values for schema fields not set
-        for f, fields in schema.items():
-            if getattr(self, f, _marker) is _marker:
+
+        # provide default values for schema fields not set.
+        # In bench_schemaconfigured.py, if the fields are FieldProperty objects found in the
+        # type, checking for whether they are set or not took 96% of the total time.
+        # We can be much faster (33us -> 9.1us) if we special case this, without hurting
+        # the non-FieldProperty case too much.
+        if self.SC_OPTIMIZE_FIELD_PROPERTY:
+            schema = self.__elide_fieldproperty(schema)
+
+        for field_name, schema_field in schema.items():
+            if field_name in kw:
+                continue
+            # TODO: I think we could do better by first checking
+            # to see if field_name is in vars(type(self))?
+            if getattr(self, field_name, _marker) is _marker:
                 # The point of this is to avoid hiding exceptions (which the builtin
                 # hasattr() does on Python 2)
-                setattr(self, f, fields.default)
+                setattr(self, field_name, schema_field.default)
+
+    __FP_KEY = '__SchemaConfigured_elide_fieldproperty'
+
+    @classmethod
+    def __elide_fieldproperty(cls, schema):
+        try:
+            matches = cls.__dict__[cls.__FP_KEY]
+        except KeyError:
+            matches = cls.__find_FieldProperty_that_match_schema(schema)
+            setattr(cls, cls.__FP_KEY, matches)
+
+        return {k: v for k, v in schema.items() if k not in matches}
+
+
+    @classmethod
+    def __find_FieldProperty_that_match_schema(cls, schema_dict):
+        result = set()
+        for field_name, schema_field in schema_dict.items():
+            try:
+                # If these are descriptors, this runs code. We don't look in the
+                # type's __dict__ because we would need to manually walk up the mro().
+                kind_value = getattr(cls, field_name)
+            except AttributeError:
+                continue
+
+            # pylint:disable=protected-access
+            if isinstance(kind_value, FieldProperty) \
+               and kind_value._FieldProperty__field == schema_field:
+                # These are data-descriptors, with both __get__ and
+                # __set__, so they're in full control. They automatically return
+                # the default value of the field (that they have), so we don't
+                # need to copy it down from our schema field.
+                result.add(field_name)
+        return result
+
+
+    @classmethod
+    def sc_changed(cls, orig_changed=None):
+        """
+        Call this method if you assign a fieldproperty to this class after creation.
+        """
+        if cls.__FP_KEY in cls.__dict__:
+            # If this happens concurrently and we hit a super class, that's
+            # fine.
+            try:
+                delattr(cls, cls.__FP_KEY)
+            except AttributeError: # pragma: no cover
+                pass
 
     # provide control over which interfaces define the data schema
     SC_SCHEMAS = None
@@ -146,8 +230,7 @@ class SchemaConfigured(object):
 
         This is determined by `SC_SCHEMAS` and defaults to `providedBy(self)`.
         """
-        spec = self.SC_SCHEMAS
-        return spec or providedBy(self)
+        return self.SC_SCHEMAS or providedBy(self)
 
 class PermissiveSchemaConfigured(SchemaConfigured):
     """

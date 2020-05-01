@@ -73,6 +73,20 @@ class TestSchemaConfigured(unittest.TestCase):
         a = A(field=1)
         assert_that(a, has_property('field', 1))
 
+    def test_changed(self):
+        class IA(interface.Interface):
+            field = Number()
+
+        @interface.implementer(IA)
+        class A(PermissiveSchemaConfigured):
+            pass
+
+        self.assertNotIn('__SchemaConfigured_elide_fieldproperty', A.__dict__)
+        A()
+        self.assertIn('__SchemaConfigured_elide_fieldproperty', A.__dict__)
+        A.sc_changed()
+        self.assertNotIn('__SchemaConfigured_elide_fieldproperty', A.__dict__)
+
     def test_readonly(self):
         from nti.schema.fieldproperty import createDirectFieldProperties
         class IA(interface.Interface):
