@@ -1,17 +1,11 @@
 #!/usr/bin/env python
-
 from __future__ import print_function, absolute_import, division
 __docformat__ = "restructuredtext en"
-
-logger = __import__('logging').getLogger(__name__)
-
-# disable: accessing protected members, too many methods
-# pylint: disable=W0212,R0904
-
+# pylint:disable=wrong-import-position,inherit-non-class
 
 from hamcrest import is_not
 from hamcrest import contains
-
+from hamcrest import is_
 from hamcrest import has_length
 from hamcrest import assert_that
 from hamcrest import has_property
@@ -34,7 +28,8 @@ from ..field import ValidTextLine as TextLine
 
 from ..schema import PermissiveSchemaConfigured
 from ..schema import SchemaConfigured
-
+from ..schema import schemaitems
+from ..schema import schemadict
 
 from ..interfaces import IBeforeDictAssignedEvent
 
@@ -52,6 +47,7 @@ class TestMisc(unittest.TestCase):
 
         assert_that(field, has_property('__name__', '__st_field_st'))
         assert_that(field, has_property('__fixup_name__', 'field'))
+
 
 class TestSchemaConfigured(unittest.TestCase):
 
@@ -113,7 +109,6 @@ class TestConfigured(unittest.TestCase):
 
     layer = SchemaLayer
 
-
     def test_dict(self):
 
         dict_field = DictFromObject(key_type=TextLine(), value_type=Number())
@@ -130,3 +125,62 @@ class TestConfigured(unittest.TestCase):
         events = eventtesting.getEvents(IBeforeDictAssignedEvent)
         assert_that(events, has_length(1))
         assert_that(events, contains(has_property('object', {'k': 1.0})))
+
+
+class TestSchemaitems(unittest.TestCase):
+
+    def test_order(self):
+        class IA(interface.Interface):
+            field1 = Number()
+            field2 = Number()
+
+        class IB(interface.Interface):
+            field3 = Number()
+            field2 = Number()
+            thing3 = interface.Attribute("Ignored")
+
+        class IC(IB):
+            field1 = Number()
+
+        items = schemaitems((IA, IB, IC))
+
+        self.assertEqual(
+            items,
+            [('field1', IA['field1']),
+             ('field2', IA['field2']),
+             ('field3', IB['field3'])]
+        )
+
+class TestSchemadict(unittest.TestCase):
+
+    def test_single_interface(self):
+        class IA(interface.Interface):
+            field1 = Number()
+
+        self.assertEqual(
+            schemadict(IA),
+            {'field1': IA['field1']}
+        )
+
+    def test_iterable(self):
+        class IA(interface.Interface):
+            field1 = Number()
+            field2 = Number()
+
+        class IB(interface.Interface):
+            field3 = Number()
+            field2 = Number()
+            thing3 = interface.Attribute("Ignored")
+
+        class IC(IB):
+            field1 = Number()
+
+        items = schemadict(iter((IA, IB, IC)))
+
+        assert_that(items, is_(
+            dict([
+                ('field1', IA['field1']),
+                ('field2', IA['field2']),
+                ('field3', IB['field3'])
+            ])
+        ))

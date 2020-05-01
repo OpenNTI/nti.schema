@@ -5,64 +5,85 @@ Helpers for writing code that implements schemas.
 
 This module contains code based on code originally from dm.zope.schema.
 """
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from zope import interface
 from zope.deferredimport import deprecatedFrom
-from zope.interface import Interface
+
+from zope.interface.interfaces import IInterface
+from zope.interface.interfaces import ISpecification
 from zope.interface import providedBy
-from zope.schema import getFieldsInOrder
+from zope.interface import implementer
+
+from zope.schema._bootstrapinterfaces import IValidatable
 
 from .interfaces import ISchemaConfigured
 
 __docformat__ = "restructuredtext en"
 
-def _interface_from_spec(spec):
+
+def schemaitems(spec, _field_key=lambda x: x[1].order):
     """
-    build an interface from interface spec *spec*.
+    schemaitems(spec) -> [(name, field)]
 
-    This should probably go into its own package (maybe ``dm.zope.interface``).
-
-    Note: the interfaces constructed in this way may not be picklable
-    (not tested). If they are indeed not picklable, they should not be stored.
+    The schema part (fields) of interface specification *spec* as
+    a list of (name, field) pairs, in their definition order.
     """
-    # try to guess whether "spec" is an interface or specification
-    #  The implementors have broken "issubclass", we therefore need
-    #  more indirect (and in principle less reliable) methods
-    # if issubclass(spec, Interface):
-    # For example, the implementedBy object tests true, but can't be passed to getFieldsInOrder
-
-    if hasattr(spec, 'names'):
-        return spec # pragma: no cover
-    return type(Interface)('FromSpec', tuple(spec), {})
-
-
-def schemaitems(spec):
-    """The schema part of interface specification *spec* as a list of id, field pairs."""
-    iface = _interface_from_spec(spec)
-    # may want to filter duplicates out or raise an exception on duplicates
-    seen = set()
-    items = []
-    for (name, field) in getFieldsInOrder(iface):
-        if name in seen:
-            continue # pragma: no cover
-        seen.add(name)
-        items.append((name, field))
-    return items
-
+    sd = schemadict(spec)
+    return sorted(sd.items(), key=_field_key)
 
 def schemadict(spec):
-    """The schema part of interface specification *spec* as a ``dict``."""
-    return dict(schemaitems(spec))
+    """
+    The schema part (fields) of interface specification *spec* as map
+    from name to field.
+
+    *spec* can be:
+
+    - A single Interface;
+    - An object implementing ``zope.interfaces.interfaces.ISpecification``,
+      such as that returned by ``providedBy(instance)`` or ``implementedBy(factory)``
+      (an Interface is a special case of this).
+    - A list, tuple, or iterable of Interfaces.
+    """
+    # ``zope.schema.getFields`` and ``getFieldsInOrder`` deal with a single
+    # interface, only. So in the past, we handled the latter two cases
+    # (which are the most common cases) by constructing a new interface
+    # at runtime using the *spec* as its bases. But that's *really* slow, especially
+    # if the hierarchy is complex. We can do a lot better if we pay attention to what
+    # we're given.
+
+    # First, boil it down to a list of Interface objects, in resolution order.
+    if IInterface.providedBy(spec):
+        iro = (spec,)
+    elif ISpecification.providedBy(spec):
+        iro = spec.__iro__
+    else:
+        iro = spec
+
+    # Next, get the most derived fields.
+    # ``zope.schema.getFields(iface)`` iterates across the interface,
+    # which is the same as calling ``iface.names(all=True)`` (which
+    # returns everything up the hierarchy). It then indexes into the
+    # object to get the attribute. We can save some steps at the cost
+    # of explicit method calls (as opposed to slots)
+    result = {}
+    is_field = IValidatable.providedBy
+    for iface in iro:
+        result.update(
+            (name, attr)
+            for name, attr
+            in iface.namesAndDescriptions()
+            if name not in result and is_field(attr)
+        )
+    return result
+
 
 
 _marker = object()
 
 
-@interface.implementer(ISchemaConfigured)
+@implementer(ISchemaConfigured)
 class SchemaConfigured(object):
     """Mixin class to provide configuration by the provided schema components."""
 
