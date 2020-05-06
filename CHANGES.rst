@@ -2,10 +2,15 @@
  Changes
 =========
 
-1.14.1 (unreleased)
+1.15.0 (unreleased)
 ===================
 
-- Nothing changed yet.
+- Improve the speed of ``SchemaConfigured`` subclasses. See `issue 54
+  <https://github.com/NextThought/nti.schema/issues/54>`_.
+
+  This involves some caching, so be sure to read the documentation for
+  ``nti.schema.schema`` if you ever mutate classes directly, or mutate
+  the results of ``schemadict``.
 
 
 1.14.0 (2020-03-27)
