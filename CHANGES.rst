@@ -2,7 +2,7 @@
  Changes
 =========
 
-1.15.0 (unreleased)
+1.15.0 (2020-05-06)
 ===================
 
 - Improve the speed of ``SchemaConfigured`` subclasses. See `issue 54
