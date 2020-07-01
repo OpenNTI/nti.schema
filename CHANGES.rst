@@ -5,7 +5,7 @@
 1.15.1 (unreleased)
 ===================
 
-- Nothing changed yet.
+- Fix plurality of error message for fields with min length of 1.
 
 
 1.15.0 (2020-05-06)
