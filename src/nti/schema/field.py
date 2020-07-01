@@ -253,9 +253,11 @@ class FieldValidationMixin(object):
     def _fixup_too_short(self, e, value):
         # Note we're capitalizing the field in the message.
         e.i18n_message = _(
-            u'${field} is too short. Please use at least ${minLength} characters.',
+            u'${field} is too short. Please use at least one character.',
+            msgid_plural=u'${field} is too short. Please use at least ${minLength} characters.',
             mapping={'field': self.__fixup_name__.capitalize(),
-                     'minLength': e.bound}
+                     'minLength': e.bound},
+            number=e.bound
         )
         e.args = (self.__fixup_name__.capitalize() + ' is too short.',
                   self.__fixup_name__,
