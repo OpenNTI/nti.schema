@@ -2,7 +2,7 @@
  Changes
 =========
 
-1.15.1 (unreleased)
+1.15.1 (2020-07-02)
 ===================
 
 - Fix plurality of error message for fields with min length of 1.
