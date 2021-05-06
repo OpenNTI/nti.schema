@@ -29,6 +29,7 @@ from six import text_type
 from zope import interface
 from zope import schema
 from zope.deferredimport import deprecatedFrom
+
 from zope.event import notify
 import zope.interface.common.idatetime
 from zope.cachedescriptors.property import Lazy
@@ -36,6 +37,7 @@ from zope.cachedescriptors.property import Lazy
 from zope.schema import interfaces as sch_interfaces
 from zope.schema.interfaces import IFromBytes
 from zope.schema.interfaces import IFromUnicode
+from zope.schema.interfaces import InvalidValue
 
 from zope.schema import Bool
 from zope.schema import Choice
@@ -62,8 +64,6 @@ from zope.schema import Real
 from zope.schema import Rational
 from zope.schema import Integral
 
-
-
 from nti.schema import MessageFactory as _
 from nti.schema.interfaces import BeforeDictAssignedEvent
 from nti.schema.interfaces import BeforeObjectAssignedEvent
@@ -74,7 +74,6 @@ from nti.schema.interfaces import BeforeTextAssignedEvent
 from nti.schema.interfaces import BeforeTextLineAssignedEvent
 from nti.schema.interfaces import IFromObject
 from nti.schema.interfaces import IListOrTuple
-from nti.schema.interfaces import InvalidValue
 from nti.schema.interfaces import IVariant
 from nti.schema.interfaces import VariantValidationError
 
@@ -442,11 +441,11 @@ class Variant(FieldValidationMixin, schema.Field):
             self.interface, self.context, self.fields
         )
 
-    def bind(self, obj):
+    def bind(self, context):
         # The fields member really does exist
         # pylint:disable=no-member
-        clone = super(Variant, self).bind(obj)
-        clone.fields = [x.bind(obj) for x in clone.fields]
+        clone = super(Variant, self).bind(context)
+        clone.fields = [x.bind(context) for x in clone.fields]
         for f in clone.fields:
             f.__parent__ = clone
         return clone
@@ -465,8 +464,8 @@ class Variant(FieldValidationMixin, schema.Field):
                         and field.schema.providedBy(value)):
                     self._reraise_validation_error(e, value)
                     raise AssertionError("This is never reached")
-                else:
-                    errors.append(e)
+
+                errors.append(e)
         try:
             raise VariantValidationError(self, value, errors)
         finally:
@@ -531,7 +530,7 @@ class Variant(FieldValidationMixin, schema.Field):
         (object, BeforeObjectAssignedEvent)
     )
 
-    def set(self, context, value):
+    def set(self, context, value): # pylint:disable=arguments-differ
         # Try to determine the most appropriate event to fire
         # Order matters. It would kind of be nice to direct this to the appropriate
         # field itself, but that's sort of hard.
@@ -665,7 +664,9 @@ class StrippedValidTextLine(DecodingValidTextLine):
 
 class ValidRegularExpression(ValidTextLine):
 
-    def __init__(self, pattern, flags=(re.U|re.I|re.M), *args, **kwargs):
+    def __init__(self, pattern, flags=(re.U|re.I|re.M), *args, **kwargs): # pylint:disable=keyword-arg-before-vararg
+        # XXX: How would we actually fix this? It should be possible on
+        # Python 3
         super(ValidRegularExpression, self).__init__(*args, **kwargs)
         self.flags = flags
         self.pattern = pattern
@@ -791,7 +792,9 @@ class _SequenceFromObjectMixin(object):
     def fromObject(self, context):
         if context == self.missing_value:
             if self.required:
-                raise sch_interfaces.RequiredMissing(self.__name__).with_field_and_value(self, context)
+                raise sch_interfaces.RequiredMissing(
+                    self.__name__
+                ).with_field_and_value(self, context)
             # Nothing useful to do here, we're not required, don't
             # even try to convert
             return context
@@ -885,7 +888,7 @@ class TupleFromObject(_ValueTypeAddingDocMixin,
     """
     accept_types = (list, tuple)
 
-    def set(self, context, value):
+    def set(self, context, value): # pylint:disable=arguments-differ
         if isinstance(value, list):
             value = tuple(value)
 

@@ -9,6 +9,9 @@
 
 - Drop support for Python 3.5.
 
+- Fix deprecation warnings emitted by using this package, and make the
+  deprecation warnings it emits more precise. See `issue 58
+  <https://github.com/NextThought/nti.schema/issues/58>`_.
 
 1.15.1 (2020-07-02)
 ===================

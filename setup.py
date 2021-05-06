@@ -71,7 +71,7 @@ setup(
             'zope.component >= 4.6.1', # consistent IRO
         ],
         'docs': [
-            'Sphinx',
+            'Sphinx < 4', # 4 breaks autointerface 0.8
             'nti.testing',
             'repoze.sphinx.autointerface',
             'sphinx_rtd_theme',
