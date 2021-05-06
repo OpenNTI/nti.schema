@@ -2,10 +2,12 @@
  Changes
 =========
 
-1.15.2 (unreleased)
+1.16.0 (unreleased)
 ===================
 
-- Nothing changed yet.
+- Add support for Python 3.9.
+
+- Drop support for Python 3.5.
 
 
 1.15.1 (2020-07-02)

@@ -10,8 +10,8 @@
         :target: https://pypi.org/project/nti.schema/
         :alt: Supported Python versions
 
-.. image:: https://travis-ci.org/NextThought/nti.schema.svg?branch=master
-        :target: https://travis-ci.org/NextThought/nti.schema
+.. image:: https://github.com/NextThought/nti.zope_catalog/workflows/tests/badge.svg
+        :target: https://github.com/NextThought/nti.zope_catalog/actions?query=workflow%3Atests
 
 .. image:: https://coveralls.io/repos/github/NextThought/nti.schema/badge.svg
         :target: https://coveralls.io/github/NextThought/nti.schema
