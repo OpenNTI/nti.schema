@@ -2,9 +2,10 @@
 from __future__ import print_function, absolute_import, division
 __docformat__ = "restructuredtext en"
 # pylint:disable=wrong-import-position,inherit-non-class
+# pylint:disable=protected-access
 
 from hamcrest import is_not
-from hamcrest import contains
+from hamcrest import contains_exactly as contains
 from hamcrest import is_
 from hamcrest import has_length
 from hamcrest import assert_that

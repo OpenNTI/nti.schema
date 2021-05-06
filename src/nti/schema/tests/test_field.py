@@ -25,7 +25,7 @@ from zope.schema.interfaces import SchemaNotProvided
 from zope.schema.interfaces import TooLong
 from zope.schema.interfaces import TooShort
 from zope.schema.interfaces import WrongType
-
+from zope.schema.interfaces import InvalidValue
 
 from nti.schema.field import HTTPURL
 from nti.schema.field import DecodingValidTextLine
@@ -47,7 +47,7 @@ from nti.schema.field import Variant
 from nti.schema.field import ValidTextLine as TextLine
 from nti.schema.interfaces import IBeforeDictAssignedEvent
 from nti.schema.interfaces import IBeforeSequenceAssignedEvent
-from nti.schema.interfaces import InvalidValue
+
 from nti.schema.interfaces import IVariant
 from nti.schema.interfaces import IFromObject
 from nti.schema.interfaces import VariantValidationError
@@ -65,7 +65,7 @@ from . import SchemaLayer
 
 from hamcrest import assert_that
 from hamcrest import calling
-from hamcrest import contains
+from hamcrest import contains_exactly as contains
 from hamcrest import contains_string
 from hamcrest import equal_to
 from hamcrest import has_length

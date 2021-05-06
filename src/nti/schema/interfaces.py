@@ -10,6 +10,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import warnings
 import traceback
 
 from zope.deprecation import deprecated
@@ -149,6 +150,10 @@ BeforeObjectAssignedEvent = BeforeObjectAssignedEvent
 InvalidValue = sch_interfaces.InvalidValue
 
 def _InvalidValue__init__(self, *args, **kwargs):
+    if 'field' in kwargs or 'value' in kwargs:
+        warnings.warn(
+            "Use zope.schema.interfaces.InvalidValue.with_field_and_value.",
+            DeprecationWarning)
     field = kwargs.pop('field', None)
     value = kwargs.pop('value', None)
     if kwargs:
@@ -164,7 +169,10 @@ sch_interfaces.InvalidValue.__init__ = _InvalidValue__init__
 del _InvalidValue__init__
 
 deprecated('InvalidValue',
-           "Use zope.schema.interfaces.InvalidValue.with_field_and_value.")
+           "This is a synonym for zope.schema.interfaces.InvalidValue. "
+           "Use its .with_field_and_value() method to set the field and value. "
+           "Do not try to pass them as keywords to the constructor."
+           )
 
 assert hasattr(sch_interfaces.InvalidValue, 'value')
 assert hasattr(sch_interfaces.ValidationError, 'field')

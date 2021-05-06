@@ -11,6 +11,7 @@ from __future__ import print_function
 
 # stdlib imports
 import unittest
+import warnings
 
 from zope.deprecation import Suppressor
 
@@ -21,7 +22,6 @@ from hamcrest import assert_that
 from hamcrest import has_property
 from hamcrest import none
 from hamcrest import is_
-from hamcrest import instance_of
 
 __docformat__ = "restructuredtext en"
 
@@ -35,12 +35,25 @@ class TestInvalidValue(unittest.TestCase):
         assert_that(v, has_property('value', none()))
         assert_that(v, has_property('field', none()))
 
-        v = InvalidValue(value=1, field=1)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            v = InvalidValue(value=1, field=1)
         assert_that(v, has_property('value', 1))
         assert_that(v, has_property('field', 1))
 
         with self.assertRaises(TypeError):
-            InvalidValue(value=1, field=2, other=3)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                InvalidValue(value=1, field=2, other=3)
+
+        # simplefilter('error') doesn't work for DeprecationWarning
+        # on Python 2, so we still get the TypeError
+        catch = TypeError if str is bytes else DeprecationWarning
+        with self.assertRaises(catch):
+            with warnings.catch_warnings():
+                warnings.simplefilter("error")
+                InvalidValue(value=1, field=2, other=3)
+
 
     def test_subclass(self):
         kind = type('subclass', (InvalidValue,), {})
