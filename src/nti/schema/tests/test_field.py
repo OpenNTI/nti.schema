@@ -155,6 +155,20 @@ class TestVariant(unittest.TestCase):
                     has_property('errors',
                                  has_length(len(syntax_or_lookup.fields))))
 
+    def test_variant_with_dict_requires_both(self):
+        from zope.schema.interfaces import RequiredMissing
+        with self.assertRaises(RequiredMissing):
+            Variant((Dict(),))
+
+        with self.assertRaises(RequiredMissing):
+            Variant((Dict(key_type=TextLine()),))
+
+        with self.assertRaises(RequiredMissing):
+            Variant((Dict(value_type=TextLine()),))
+
+        with self.assertRaises(RequiredMissing):
+            Variant((Dict(value_type=Dict(), key_type=TextLine()),))
+
     def test_getDoc(self):
         syntax_or_lookup = Variant((Object(cmn_interfaces.ISyntaxError),
                                     Object(cmn_interfaces.ILookupError),
@@ -818,3 +832,39 @@ class Test_FieldConverter(unittest.TestCase):
         assert_that(converter(b''), is_(b'from bytes'))
         assert_that(converter(u''), is_(u'from unicode'))
         assert_that(converter(1), is_(b'from object'))
+
+class TestFunctions(unittest.TestCase):
+
+    def test_fixup_Object_field_mapping_requires_key_and_value(self):
+        from zope.interface import implementer
+        from zope.schema.interfaces import IMapping
+        from nti.schema.field import _fixup_Object_field
+
+        @implementer(IMapping)
+        class Mapping(object):
+            value_type = None
+            key_type = None
+
+        # neither
+        field = Mapping()
+        _fixup_Object_field(field)
+        assert_that(field, does_not(verifiably_provides(IFromObject)))
+
+        # An invalid key type
+        field = Mapping()
+        field.key_type = TextLine()
+        _fixup_Object_field(field)
+        assert_that(field, does_not(verifiably_provides(IFromObject)))
+
+        # An invalid value type
+        field = Mapping()
+        field.value_type = TextLine()
+        _fixup_Object_field(field)
+        assert_that(field, does_not(verifiably_provides(IFromObject)))
+
+        # Both valid
+        field = Mapping()
+        field.value_type = TextLine()
+        field.key_type = TextLine()
+        _fixup_Object_field(field)
+        assert_that(field, verifiably_provides(IFromObject))

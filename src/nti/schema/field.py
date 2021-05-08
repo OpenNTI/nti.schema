@@ -166,7 +166,7 @@ def __with_set(eventfactory=BeforeSchemaFieldAssignedEvent):
         return cls
     return X
 
-def _fixup_Object_field(field):
+def _fixup_Object_field(field, early_error=False):
     # If possible, make the field provide IFromObject
     if not IFromObject.providedBy(field):
         if isinstance(field, _ObjectBase):
@@ -198,10 +198,21 @@ def _fixup_Object_field(field):
             # Has a value_type and key_type
             try:
                 # pylint:disable=protected-access
-                _SequenceFromObjectMixin._validate_contained_field(field.value_type)
-                _SequenceFromObjectMixin._validate_contained_field(field.key_type)
+                _SequenceFromObjectMixin._validate_contained_field(field.value_type,
+                                                                   required=True,
+                                                                   early_error=early_error)
+                _SequenceFromObjectMixin._validate_contained_field(field.key_type,
+                                                                   required=True,
+                                                                   early_error=early_error)
+            except sch_interfaces.RequiredMissing:
+                # Previously, we could pass with None for the key or value. That *will*
+                # blow up in the fromObject case, though. So now we don't add IFromObject
+                # that we *know* will blow up. Further, we raise this error so that the invalid
+                # Dict gets caught, when requested
+                if early_error:
+                    raise
             except sch_interfaces.SchemaNotProvided:
-                # Nothing we can do
+                # Nothing to add.
                 pass
             else:
                 def _map_fromObject(value):
@@ -388,6 +399,12 @@ class Variant(FieldValidationMixin, schema.Field):
         :class:`zope.schema.Dict`) will automatically be given a ``fromObject`` method
         when they are used as a field of this object *if* their *value_type* is an
         :class:`zope.schema.interfaces.IObject` (recursively).
+
+    .. versionchanged:: 1.16.0
+       If one of the fields of the variant is (recursively) a ``IMapping``
+       such as a ``Dict``, both the key and value type must be specified. Previously,
+       if they were left ``None``, a validation-time :exc:`AttributeError`
+       would be raised. Now, constructing the variant will raise a ``RequiredMissing``.
     """
 
     fields = ()
@@ -401,14 +418,13 @@ class Variant(FieldValidationMixin, schema.Field):
             a validation error, that error will be propagated instead
             of the error raised by the last field, and no additional fields
             will be asked to do validation.
-
         """
         if not fields or not all((sch_interfaces.IField.providedBy(x) for x in fields)):
             raise sch_interfaces.SchemaNotProvided(sch_interfaces.IField)
 
         # assign our children first so anything we copy to them as a result of the super
         # constructor (__name__) gets set
-        self.fields = [_fixup_Object_field(field) for field in fields]
+        self.fields = [_fixup_Object_field(field, early_error=True) for field in fields]
         for f in self.fields:
             f.__parent__ = self
 
@@ -766,12 +782,15 @@ class _SequenceFromObjectMixin(object):
         self._validate_contained_field(self.value_type)
 
     @classmethod
-    def _validate_contained_field(cls, field):
-        field = _fixup_Object_field(field)
-        # We allow None for a value type
+    def _validate_contained_field(cls, field, required=False, early_error=False):
+        # We allow None for a value type, unless required=True
+        if field is None and required:
+            raise sch_interfaces.RequiredMissing()
+        field = _fixup_Object_field(field, early_error=early_error)
         if field is not None and not any(
-                (iface.providedBy(field)
-                 for iface in (IFromObject, IFromUnicode, IFromBytes))
+                iface.providedBy(field)
+                for iface
+                in (IFromObject, IFromUnicode, IFromBytes)
         ):
             raise sch_interfaces.SchemaNotProvided(IFromObject, field)
 

@@ -13,6 +13,19 @@
   deprecation warnings it emits more precise. See `issue 58
   <https://github.com/NextThought/nti.schema/issues/58>`_.
 
+- Fix constructing a ``Variant`` to do some extra validation of
+  ``IMapping`` fields to require that both the ``key_type`` and
+  ``value_type`` are given. Previously, if one or both were left
+  ``None``, an ``AttributeError`` would be raised when the field was
+  asked to validate data or its ``fromObject()`` method was called.
+  Now, a ``RequiredMissing`` error will be raised when the ``Variant``
+  is created. Some other nested uses of ``Dict`` fields, such as a
+  ``Sequence``, could also have raised the ``AttributeError``; this
+  may change in the future to raise at construction time as well.
+
+  See `issue 59 <https://github.com/NextThought/nti.schema/issues>`_.
+
+
 1.15.1 (2020-07-02)
 ===================
 
