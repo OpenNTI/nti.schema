@@ -26,7 +26,7 @@ setup(
     ),
     license='Apache',
     keywords='zope schema',
-    url='https://github.com/NextThought/nti.schema',
+    url='https://github.com/OpenNTI/nti.schema',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
