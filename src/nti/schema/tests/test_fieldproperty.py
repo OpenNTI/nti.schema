@@ -104,7 +104,13 @@ class TestCreateFieldProperties(unittest.TestCase):
         assert_that(B.__dict__['b'], is_(AdaptingFieldProperty))
 
         # And nothing extra crept in, just the four standard things
-        # __dict__, __doct__, __module__, __weakref__, and b
+        # __dict__, __doct__, __module__, __weakref__, and b.
+        # Python 3.13 adds some extra things:
+        # __firstlineno__
+        # __static_attributes__ -> stupid typing
+        b_dict = dict(B.__dict__)
+        b_dict.pop('__static_attributes__', None)
+        b_dict.pop('__firstlineno__', None)
         assert_that(B.__dict__, has_length(5))
 
 class TestUnicodeFieldProperty(unittest.TestCase):
