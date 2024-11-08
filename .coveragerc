@@ -19,3 +19,5 @@ exclude_lines =
     if sys.platform == 'win32':
     if mswindows:
     if is_windows:
+fail_under = 99
+precision = 2
