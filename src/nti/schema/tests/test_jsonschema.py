@@ -61,7 +61,7 @@ class TestJsonSchemafier(unittest.TestCase):
     def test_application_info(self):
 
         app_info = {
-            'text_key': u'a value',
+            'text_key': 'a value',
             'byte_key': b'bytes',
             'int_key': 7,
             'list_key': [42,]
@@ -72,7 +72,7 @@ class TestJsonSchemafier(unittest.TestCase):
             field = Attribute("A field")
             field.setTaggedValue(jsonschema.TAG_APPLICATION_INFO, app_info)
 
-        schema = TranslateTestSchema(IA, context=u' TEST').make_schema()
+        schema = TranslateTestSchema(IA, context=' TEST').make_schema()
 
         assert_that(schema, has_key("field"))
         field = schema['field']
@@ -85,7 +85,7 @@ class TestJsonSchemafier(unittest.TestCase):
                     has_entry('list_key', is_not(same_instance(app_info['list_key']))))
 
         # Text strings were translated
-        assert_that(field['application_info'], has_entry('text_key', u'a value TEST'))
+        assert_that(field['application_info'], has_entry('text_key', 'a value TEST'))
 
         # Byte strings were not (is that even legel in json?)
         assert_that(field['application_info'], has_entry('byte_key', b'bytes'))
@@ -95,7 +95,7 @@ class TestJsonSchemafier(unittest.TestCase):
         class IA(Interface):
 
             def method():
-                "A method"
+                """A method"""
 
             _thing = Attribute("A private attribute")
 
@@ -123,6 +123,8 @@ class TestJsonSchemafier(unittest.TestCase):
         assert_that(schema, has_entry('field', has_entry('type', 'MyType')))
 
     def test_type_from_types(self):
+        # TODO: Refactor and simplify
+        # pylint:disable=too-many-statements
         from zope.schema import Object
         from nti.schema.field import Variant
 
@@ -137,7 +139,7 @@ class TestJsonSchemafier(unittest.TestCase):
 
         class IUnderlyingA(Interface):
 
-            text_field = DecodingValidTextLine(title=u'nested text',
+            text_field = DecodingValidTextLine(title='nested text',
                                                min_length=5)
 
             hidden_text_field = DecodingValidTextLine()
@@ -150,8 +152,8 @@ class TestJsonSchemafier(unittest.TestCase):
 
             field = Attribute("A field")
 
-            field2 = DecodingValidTextLine(title=u'A title',
-                                           description=u'A description')
+            field2 = DecodingValidTextLine(title='A title',
+                                           description='A description')
 
             list_field = List(DecodingValidTextLine())
             list_or_tuple_field = ListOrTuple(Real())
@@ -177,7 +179,7 @@ class TestJsonSchemafier(unittest.TestCase):
         IA['field']._type = str
         _assert_type('string')
 
-        IA['field']._type = (str,)
+        IA['field']._type = (str,) # pylint:disable=redefined-variable-type
         _assert_type('string')
 
 
@@ -198,8 +200,8 @@ class TestJsonSchemafier(unittest.TestCase):
 
         _assert_type('string', 'field2',
                      base_type='string',
-                     title=u'A title TEST',
-                     description=u'A description TEST')
+                     title='A title TEST',
+                     description='A description TEST')
 
         _assert_type('list', 'list_field', value_type=has_entry('type', 'string'))
         _assert_type('list', 'list_or_tuple_field')

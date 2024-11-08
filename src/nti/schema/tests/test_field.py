@@ -4,10 +4,6 @@
 Tests for field.py
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 # stdlib imports
 import unittest
 import warnings
@@ -94,19 +90,19 @@ class TestObjectLen(unittest.TestCase):
 
         olen = ObjectLen(IUnicode, max_length=5)  # default val for min_length
 
-        olen.validate(u'a')
-        olen.validate(u'')
+        olen.validate('a')
+        olen.validate('')
 
         assert_that(calling(olen.validate).with_args(object()),
                     raises(SchemaNotProvided))
 
-        assert_that(calling(olen.validate).with_args(u'abcdef'),
+        assert_that(calling(olen.validate).with_args('abcdef'),
                     raises(TooLong))
 
     def test_objectlen_short(self):
         olen = ObjectLen(IUnicode, min_length=5)
 
-        assert_that(calling(olen.validate).with_args(u'abc'),
+        assert_that(calling(olen.validate).with_args('abc'),
                     raises(TooShort))
 
 class TestHTTPUrl(unittest.TestCase):
@@ -146,7 +142,7 @@ class TestVariant(unittest.TestCase):
         # doesn't validate
         assert_that(b'foo', not_validated_by(syntax_or_lookup))
 
-        assert_that(syntax_or_lookup.fromObject(u'foo'), is_(u'foo'))
+        assert_that(syntax_or_lookup.fromObject('foo'), is_('foo'))
 
         with self.assertRaises(VariantValidationError) as exc:
             syntax_or_lookup.fromObject(object())
@@ -187,12 +183,12 @@ class TestVariant(unittest.TestCase):
         variant = Variant((dict_field, string_field, list_of_numbers_field))
         variant.getDoc()  # cover
         # It takes all these things
-        for d in {u'k': u'v'}, u'foo', [1, 2, 3]:
+        for d in {'k': 'v'}, 'foo', [1, 2, 3]:
             assert_that(d, validated_by(variant))
 
         # It rejects these by raising a VariantValidationError
         # with the same number of errors as fields
-        for d in {u'k': 1}, b'foo', [1, 2, u'b']:
+        for d in {'k': 1}, b'foo', [1, 2, 'b']:
             assert_that(d, not_validated_by(variant))
             with self.assertRaises(VariantValidationError) as exc:
                 variant.fromObject(d)
@@ -212,12 +208,14 @@ class TestVariant(unittest.TestCase):
             assert_that(f, has_property('__name__', 'baz'))
 
         # and in clones
+        # pylint:disable=no-member
         clone = variant.bind(object())
         for f in clone.fields:
             assert_that(f, has_property('__name__', 'baz'))
 
         # which doesn't change the original
         clone.__name__ = 'biz'
+
         for f in clone.fields:
             assert_that(f, has_property('__name__', 'biz'))
 
@@ -251,10 +249,11 @@ class TestVariant(unittest.TestCase):
 
         bound_variant = variant.bind(self)
 
+        # pylint:disable=no-member
         assert_that(bound_variant.fields[0], verifiably_provides(IFromObject))
 
-        l = bound_variant.fromObject([u'abc'])
-        assert_that(l, is_([u'abc']))
+        l = bound_variant.fromObject(['abc'])
+        assert_that(l, is_(['abc']))
 
         # Doing the same with a list of a field we don't know about
         # does nothing.
@@ -279,11 +278,11 @@ class TestVariant(unittest.TestCase):
         assert_that(map_field, verifiably_provides(IFromObject))
 
         bound_variant = variant.bind(self)
-
+        # pylint:disable=no-member
         assert_that(bound_variant.fields[0], verifiably_provides(IFromObject))
 
-        l = bound_variant.fromObject({u'abc': u'def'})
-        assert_that(l, is_({u'abc': u'def'}))
+        l = bound_variant.fromObject({'abc': 'def'})
+        assert_that(l, is_({'abc': 'def'}))
 
         # Doing the same with a list of a field we don't know about
         # does nothing.
@@ -308,7 +307,7 @@ class TestVariant(unittest.TestCase):
         assert_that(field.fromObject("1.0"),
                     is_(1.0))
 
-        assert_that(calling(field.validate).with_args(u'1.0'),
+        assert_that(calling(field.validate).with_args('1.0'),
                     raises(SchemaNotProvided))
 
     def test_invalid_construct(self):
@@ -407,19 +406,19 @@ class TestConfiguredVariant(unittest.TestCase):
         number_field = Number()
         list_of_strings_or_numbers = ListOrTuple(value_type=Variant((string_field, number_field)))
 
-        assert_that([1, u'2'], validated_by(list_of_strings_or_numbers))
-        assert_that({u'k': u'v'}, validated_by(dict_field))
+        assert_that([1, '2'], validated_by(list_of_strings_or_numbers))
+        assert_that({'k': 'v'}, validated_by(dict_field))
 
         dict_or_list = Variant((dict_field, list_of_strings_or_numbers))
 
-        assert_that([1, u'2'], validated_by(dict_or_list))
-        assert_that({u'k': u'v'}, validated_by(dict_or_list))
+        assert_that([1, '2'], validated_by(dict_or_list))
+        assert_that({'k': 'v'}, validated_by(dict_or_list))
 
         class X(object):
             pass
 
         x = X()
-        dict_or_list.set(x, [1, u'2'])
+        dict_or_list.set(x, [1, '2'])
 
         events = eventtesting.getEvents(IBeforeSequenceAssignedEvent)
         assert_that(events, has_length(1))
@@ -427,7 +426,7 @@ class TestConfiguredVariant(unittest.TestCase):
 
         eventtesting.clearEvents()
 
-        dict_or_list.set(x, {u'k': u'v'})
+        dict_or_list.set(x, {'k': 'v'})
         events = eventtesting.getEvents(IBeforeDictAssignedEvent)
         assert_that(events, has_length(1))
         assert_that(events, contains(has_property('object', {'k': 'v'})))
@@ -558,19 +557,20 @@ class TestListOrTupleFromObject(SequenceFromObjectMixinMixin,
 
         class Conforms(object):
 
-            def __conform__(self, iface):
+            def __conform__(self, iface): # pylint:disable=bad-dunder-name
                 assert_that(iface, is_(IUnicode))
-                return u'def'
+                return 'def'
 
         o = field.fromObject((Conforms(),))
-        assert_that(o, is_([u'def']))
+        assert_that(o, is_(['def']))
 
         # This works even when bound
 
-        field = field.bind(self)
+        field = field.bind(self) # pylint:disable=redefined-variable-type
+        # pylint:disable=no-member
         assert_that(field.value_type, verifiably_provides(IFromObject))
         o = field.fromObject((Conforms(),))
-        assert_that(o, is_([u'def']))
+        assert_that(o, is_(['def']))
 
     def test_construct_with_bad_field(self):
 
@@ -599,23 +599,23 @@ class TestStrippedValidTextLine(unittest.TestCase):
         class Thing(object):
             foo = FieldProperty(field)
 
-        assert_that(field.fromUnicode(u' abc '), equal_to(u'abc'))
-        assert_that(field.fromUnicode(u' a '), equal_to(u'a'))
-        assert_that(field.fromBytes(b' abc '), equal_to(u'abc'))
-        assert_that(calling(setattr).with_args(Thing(), 'foo', u' abc '), raises(InvalidValue))
-        assert_that(calling(setattr).with_args(Thing(), 'foo', u'abc '), raises(InvalidValue))
-        assert_that(calling(setattr).with_args(Thing(), 'foo', u' abc'), raises(InvalidValue))
+        assert_that(field.fromUnicode(' abc '), equal_to('abc'))
+        assert_that(field.fromUnicode(' a '), equal_to('a'))
+        assert_that(field.fromBytes(b' abc '), equal_to('abc'))
+        assert_that(calling(setattr).with_args(Thing(), 'foo', ' abc '), raises(InvalidValue))
+        assert_that(calling(setattr).with_args(Thing(), 'foo', 'abc '), raises(InvalidValue))
+        assert_that(calling(setattr).with_args(Thing(), 'foo', ' abc'), raises(InvalidValue))
 
         # Check valid case
-        Thing().foo = u'abc'
-        Thing().foo = u'a'
+        Thing().foo = 'abc'
+        Thing().foo = 'a'
 
 class TestDecodingValidTextLine(unittest.TestCase):
 
     def test_decode(self):
         field = DecodingValidTextLine()
         res = field.validate(b'abc')
-        assert_that(res, is_(u'abc'))
+        assert_that(res, is_('abc'))
 
     def test_fromBytes(self):
         from zope.schema.interfaces import IFromBytes
@@ -623,7 +623,7 @@ class TestDecodingValidTextLine(unittest.TestCase):
         assert_that(field, verifiably_provides(IFromBytes))
 
         val = field.fromBytes(b'abc')
-        assert_that(val, is_(u'abc'))
+        assert_that(val, is_('abc'))
 
 class TestNumber(unittest.TestCase):
 
@@ -739,12 +739,8 @@ class TestDictFromObject(SequenceFromObjectMixinMixin,
                     verifiably_provides(IFromObject))
 
     def test_accepts_mapping(self):
-        from six.moves import UserDict
+        from collections import UserDict
         from nti.schema.field import abcs
-
-        # On Python 2, UserDict is not registered as a Mapping.
-        if not issubclass(UserDict, abcs.Mapping): # pragma: no cover
-            abcs.Mapping.register(UserDict)
 
         field = self._makeOne(key_type=Int(), value_type=Float())
 
@@ -776,7 +772,7 @@ class Test_FieldConverter(unittest.TestCase):
     def test_fromBytes(self):
 
         class Field(object):
-            def fromBytes(self, value):
+            def fromBytes(self, _value):
                 return b'from bytes'
 
             def validate(self, value):
@@ -813,24 +809,24 @@ class Test_FieldConverter(unittest.TestCase):
 
         # Otherwise we return the value we were passed
         assert_that(converter(b''), is_(b''))
-        assert_that(converter(u''), is_(u''))
+        assert_that(converter(''), is_(''))
 
     def test_fromObject(self):
         # from object is only called for non-strings if
         # fromUnicode and fromBytes are implemented.
         class Field(object):
-            def fromObject(self, value):
+            def fromObject(self, _value):
                 return b'from object'
 
-            def fromUnicode(self, value):
-                return u'from unicode'
+            def fromUnicode(self, _value):
+                return 'from unicode'
 
-            def fromBytes(self, value):
+            def fromBytes(self, _value):
                 return b'from bytes'
 
         converter = self._makeOne(Field())
         assert_that(converter(b''), is_(b'from bytes'))
-        assert_that(converter(u''), is_(u'from unicode'))
+        assert_that(converter(''), is_('from unicode'))
         assert_that(converter(1), is_(b'from object'))
 
 class TestFunctions(unittest.TestCase):

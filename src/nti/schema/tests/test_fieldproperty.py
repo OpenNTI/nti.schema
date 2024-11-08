@@ -77,7 +77,7 @@ class TestAqFieldProperty(unittest.TestCase):
         foo.ob = Baz()
         assert_that(foo, has_property('ob', is_not(aq_inContextOf(foo))))
 
-        foo.ob = BazAQ()
+        foo.ob = BazAQ() # pylint:disable=redefined-variable-type
         assert_that(foo, has_property('ob', aq_inContextOf(foo)))
 
 class TestCreateFieldProperties(unittest.TestCase):
@@ -87,7 +87,7 @@ class TestCreateFieldProperties(unittest.TestCase):
             pass
 
         class IA(Interface):
-            a = TextLine(title=u"a")
+            a = TextLine(title="a")
 
         class IB(IA):
             b = Object(IBaz)
@@ -104,14 +104,20 @@ class TestCreateFieldProperties(unittest.TestCase):
         assert_that(B.__dict__['b'], is_(AdaptingFieldProperty))
 
         # And nothing extra crept in, just the four standard things
-        # __dict__, __doct__, __module__, __weakref__, and b
-        assert_that(B.__dict__, has_length(5))
+        # __dict__, __doct__, __module__, __weakref__, and b.
+        # Python 3.13 adds some extra things:
+        # __firstlineno__
+        # __static_attributes__ -> stupid typing
+        b_dict = dict(B.__dict__)
+        b_dict.pop('__static_attributes__', None)
+        b_dict.pop('__firstlineno__', None)
+        assert_that(b_dict, has_length(5))
 
 class TestUnicodeFieldProperty(unittest.TestCase):
 
     def test_set_bytes(self):
         class IA(Interface):
-            a = TextLine(title=u"a")
+            a = TextLine(title="a")
 
         class A(object):
             a = UnicodeConvertingFieldProperty(IA['a'])
@@ -119,7 +125,7 @@ class TestUnicodeFieldProperty(unittest.TestCase):
         a = A()
         a.a = b'abc'
 
-        assert_that(a, has_property('a', is_(u'abc')))
+        assert_that(a, has_property('a', is_('abc')))
 
 class TestAdaptingFieldProperty(unittest.TestCase):
 
@@ -138,7 +144,7 @@ class TestAdaptingFieldProperty(unittest.TestCase):
             pass
 
         class Conforms(object):
-            def __conform__(self, iface):
+            def __conform__(self, iface): # pylint:disable=bad-dunder-name,unused-argument
                 return Baz()
 
         for fp in AdaptingFieldProperty, AdaptingFieldPropertyStoredThroughField:
@@ -156,7 +162,7 @@ class TestAdaptingFieldProperty(unittest.TestCase):
                 obj.ob = CantConform()
 
             # But this can be adapted
-            obj.ob = Conforms()
+            obj.ob = Conforms() # pylint:disable=redefined-variable-type
             assert_that(obj.ob, is_(Baz))
 
 def test_suite():

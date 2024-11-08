@@ -9,24 +9,10 @@ on fields of interfaces, helping determine how the schema is built.
 
 ..  note:: This schema is ad-hoc and non-standard.
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from copy import copy
-
-try:
-    from collections.abc import Sequence
-except ImportError: # pragma: no cover
-    # Python 2
-    from collections import Sequence
-
+from collections.abc import Sequence
 from numbers import Number
 
-from six import integer_types
-from six import string_types
-from six import text_type
 
 from zope.i18n import translate
 
@@ -96,15 +82,17 @@ def get_ui_type_from_field_interface(field):
 _ui_type_from_field_iface = ui_type_from_field_iface = get_ui_type_from_field_interface # BWC
 
 def get_ui_types_from_field(field):
+    # TODO: Refactor and simplify
+    # pylint:disable=too-complex,too-many-branches
     ui_type = ui_base_type = None
     _type = getattr(field, '_type', None)
     if isinstance(_type, type):
         ui_type = _type.__name__
     elif isinstance(_type, tuple):
         # Most commonly lists subclasses. Most commonly lists subclasses of strings
-        if all((issubclass(x, string_types) for x in _type)):
+        if all((issubclass(x, str) for x in _type)):
             ui_type = 'basestring'
-        elif all((issubclass(x, integer_types) for x in _type)):
+        elif all((issubclass(x, int) for x in _type)):
             ui_type = 'int'
         elif all((issubclass(x, float) for x in _type)):
             ui_type = 'float'
@@ -113,26 +101,26 @@ def get_ui_types_from_field(field):
     else:
         ui_type = get_ui_type_from_field_interface(field)
 
-    if ui_type in ('unicode', 'str', 'basestring'):
+    if ui_type in {'unicode', 'str', 'basestring'}:
         # These are all 'string' type
 
         # Can we be more specific?
         ui_type = get_ui_type_from_field_interface(field)
-        if ui_type and ui_type not in ('TextLine', 'Text'): # pragma: no cover
+        if ui_type and ui_type not in {'TextLine', 'Text'}: # pragma: no cover
             # Yes we can
             ui_base_type = 'string'
         else:
             ui_type = 'string'
             ui_base_type = 'string'
-    elif ui_type in ('Sequence', 'MutableSequence'):
+    elif ui_type in {'Sequence', 'MutableSequence'}:
         ui_type = 'list'
-    elif ui_type in ('Mapping', 'MutableMapping'):
+    elif ui_type in {'Mapping', 'MutableMapping'}:
         ui_type = 'dict'
-    elif ui_type in ('Number', 'float', 'Decimal', 'Complex', 'Real', 'Rational'):
+    elif ui_type in {'Number', 'float', 'Decimal', 'Complex', 'Real', 'Rational'}:
         ui_base_type = 'float'
-    elif ui_type in ('int', 'long', 'Integral'):
+    elif ui_type in {'int', 'long', 'Integral'}:
         ui_base_type = 'int'
-    elif ui_type in ('bool',):
+    elif ui_type in {'bool',}:
         ui_base_type = 'bool'
     return ui_type, ui_base_type
 
@@ -140,11 +128,12 @@ _ui_type_from_field = ui_type_from_field = get_ui_types_from_field # BWC
 
 def get_data_from_choice_field(v, base_type=None):
     # Vocabulary could be a name or the vocabulary itself
-    choices = ()
+    choices:Sequence = ()
     vocabulary = None
+    # pylint:disable-next=no-value-for-parameter
     if sch_interfaces.IVocabulary.providedBy(v.vocabulary): # pragma: no cover
         vocabulary = v.vocabulary
-    elif isinstance(v.vocabularyName, string_types):
+    elif isinstance(v.vocabularyName, str):
         name = v.vocabularyName
         vocabulary = sch_vocabulary.getVocabularyRegistry().get(None, name)
 
@@ -172,7 +161,7 @@ def get_data_from_choice_field(v, base_type=None):
 
         # common case, these will all be the same type
         if  not base_type \
-            and all((isinstance(x, string_types) for x in tokens)):
+            and all((isinstance(x, str) for x in tokens)):
             base_type = 'string'
     return choices, base_type
 _process_choice_field = process_choice_field = get_data_from_choice_field
@@ -254,6 +243,7 @@ class JsonSchemafier(object):
         ext_schema = {}
         for k, v in self._iter_names_and_descriptions():
             __traceback_info__ = k, v
+            # pylint:disable-next=no-value-for-parameter
             if IMethod.providedBy(v):
                 continue
             # v could be a schema field or an interface.Attribute
@@ -310,12 +300,12 @@ class JsonSchemafier(object):
         # for these optional keys, if they are expected to be there based on the
         # type of the field, it just may be None if it was excluded (or empty,
         # if all variants were excluded).
-
+        # pylint:disable-next=no-value-for-parameter
         if sch_interfaces.IChoice.providedBy(field):
             choices, base_type = self.get_data_from_choice_field(field, ui_base_type)
             item_schema['choices'] = choices
             item_schema['base_type'] = base_type
-
+        # pylint:disable-next=no-value-for-parameter
         if IVariant.providedBy(field):
             # 'fields' is not actually declared in the IVariant
             # interface; that's ok, we couldn't handle it automatically anyway.
@@ -328,7 +318,7 @@ class JsonSchemafier(object):
 
         application_info = field.queryTaggedValue(TAG_APPLICATION_INFO) or {}
         item_schema['application_info'] = {
-            k: self._translate(v) if isinstance(v, text_type) else copy(v)
+            k: self._translate(v) if isinstance(v, str) else copy(v)
             for k, v in application_info.items()
         }
 
@@ -346,7 +336,7 @@ class JsonSchemafier(object):
                            _excluded=('missing_value', 'default', 'validate_invariants'),
                            # For safety, we'll refuse to output a value we don't understand.
                            # We expect dicts to have come from us, creating schemas.
-                           _allowed_value_types=string_types + (Number, type(None), dict)):
+                           _allowed_value_types=(str, Number, type(None), dict)):
         derived_field_iface = find_most_derived_interface(field, sch_interfaces.IField)
         if not derived_field_iface or derived_field_iface is sch_interfaces.IField:
             return
@@ -356,11 +346,13 @@ class JsonSchemafier(object):
             if name in item_schema or name in _excluded:
                 # Cheap test first: if we've already got it, ignore it
                 continue
+            # pylint:disable-next=no-value-for-parameter
             if not sch_interfaces.IField.providedBy(field_field):
                 continue
 
             # A few things we handle specially.
             value = field_field.query(field)
+            # pylint:disable-next=no-value-for-parameter
             if sch_interfaces.IField.providedBy(value):
                 # It is another field, yay, like value_type or key_type,
                 # so we need to recurse
@@ -368,7 +360,7 @@ class JsonSchemafier(object):
             elif IInterface.providedBy(value):
                 schemafier = self.bind(value)
                 value = schemafier.make_schema()
-            elif isinstance(value, text_type):
+            elif isinstance(value, str):
                 value = self._translate(value)
 
             if not isinstance(value, _allowed_value_types):

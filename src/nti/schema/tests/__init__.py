@@ -1,12 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
-from six import text_type
 from zope.interface import Interface
 from zope.interface import classImplements
 from zope.testing import cleanup
@@ -41,7 +36,7 @@ class SchemaLayer(ZopeComponentLayer,
 
 
 class IUnicode(Interface):
-    "Unicode strings"
+    """Unicode strings"""
 
 
-classImplements(text_type, IUnicode)
+classImplements(str, IUnicode)

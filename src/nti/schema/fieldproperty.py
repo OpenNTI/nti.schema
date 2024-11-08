@@ -5,9 +5,6 @@ Computed attributes based on schema fields.
 
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 # stdlib imports
 import sys
@@ -29,13 +26,14 @@ class AcquisitionFieldProperty(FieldProperty):
     """
 
     def __get__(self, instance, klass):
-        result = super(AcquisitionFieldProperty, self).__get__(instance, klass)
+        result = super().__get__(instance, klass)
+        # pylint:disable-next=no-value-for-parameter
         if instance is not None and IAcquirer.providedBy(result):  # even defaults get wrapped
             result = result.__of__(instance)
         return result
 
     def __set__(self, instance, value):
-        super(AcquisitionFieldProperty, self).__set__(instance, aq_base(value))
+        super().__set__(instance, aq_base(value))
 
 class UnicodeConvertingFieldProperty(FieldProperty):
     """
@@ -47,9 +45,10 @@ class UnicodeConvertingFieldProperty(FieldProperty):
     def __set__(self, inst, value):
         if isinstance(value, bytes):
             value = value.decode('utf-8')
-        super(UnicodeConvertingFieldProperty, self).__set__(inst, value)
+        super().__set__(inst, value)
 
 def _find_schema_from_field(field):
+    # pylint:disable-next=no-value-for-parameter
     if not sch_interfaces.IObject.providedBy(field) and not hasattr(field, 'schema'):
         raise sch_interfaces.WrongType("Don't know how to get schema from %s" % field)
     return field.schema
@@ -79,7 +78,7 @@ class AdaptingFieldProperty(FieldProperty):
 
     def __init__(self, field, name=None):
         self.schema = _find_schema_from_field(field)
-        super(AdaptingFieldProperty, self).__init__(field, name=name)
+        super().__init__(field, name=name)
 
 AdaptingFieldProperty.__set__ = _make_adapter_set(AdaptingFieldProperty)
 
@@ -92,7 +91,7 @@ class AdaptingFieldPropertyStoredThroughField(FieldPropertyStoredThroughField):
 
     def __init__(self, field, name=None):
         self.schema = _find_schema_from_field(field)
-        super(AdaptingFieldPropertyStoredThroughField, self).__init__(field, name=name)
+        super().__init__(field, name=name)
 
 AdaptingFieldPropertyStoredThroughField.__set__ = _make_adapter_set(
     AdaptingFieldPropertyStoredThroughField)
@@ -146,6 +145,7 @@ def createDirectFieldProperties(__schema, omit=(), adapting=False):
     __frame = sys._getframe(1) # pylint:disable=protected-access
     for k, v in list(locals().items()):
         if k not in __before:
+            # pylint:disable-next=no-value-for-parameter
             if adapting and sch_interfaces.IObject.providedBy(__schema[k]):
                 v = AdaptingFieldProperty(__schema[k])
             __frame.f_locals[k] = v

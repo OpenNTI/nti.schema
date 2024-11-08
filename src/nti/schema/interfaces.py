@@ -6,10 +6,6 @@ Interfaces describing the events and fields this package uses.
 Also utility functions.
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import warnings
 import traceback
 
@@ -31,6 +27,7 @@ except ImportError: # pragma: no cover
 __docformat__ = "restructuredtext en"
 
 # pylint:disable=inherit-non-class,no-self-argument
+# pylint:disable=too-many-ancestors
 
 class IBeforeSchemaFieldAssignedEvent(Interface):
     """
@@ -41,11 +38,11 @@ class IBeforeSchemaFieldAssignedEvent(Interface):
     :class:`zope.schema.interfaces.IBeforeObjectAssignedEvent` is a
     sub-interface of this one once this module is imported.
     """
-    object = Attribute(u"The object that is going to be assigned. Subscribers may modify this")
+    object = Attribute("The object that is going to be assigned. Subscribers may modify this")
 
-    name = Attribute(u"The name of the attribute under which the object will be assigned.")
+    name = Attribute("The name of the attribute under which the object will be assigned.")
 
-    context = Attribute(u"The context object where the object will be assigned to.")
+    context = Attribute("The context object where the object will be assigned to.")
 
 # Make this a base of the zope interface so our handlers
 # are compatible. This is dangerous if any lookups or registrations have already been done,
@@ -65,14 +62,14 @@ class IBeforeTextAssignedEvent(IBeforeSchemaFieldAssignedEvent):
     Event for assigning text.
     """
 
-    object = Text(title=u"The text being assigned.")
+    object = Text(title="The text being assigned.")
 
 class IBeforeTextLineAssignedEvent(IBeforeTextAssignedEvent):  # ITextLine extends IText
     """
     Event for assigning text lines.
     """
 
-    object = TextLine(title=u"The text being assigned.")
+    object = TextLine(title="The text being assigned.")
 
 class IBeforeContainerAssignedEvent(IBeforeSchemaFieldAssignedEvent):
     """
@@ -89,7 +86,7 @@ class IBeforeCollectionAssignedEvent(IBeforeIterableAssignedEvent):
     Event for assigning collections.
     """
 
-    object = Attribute(u"The collection being assigned. May or may not be mutable.")
+    object = Attribute("The collection being assigned. May or may not be mutable.")
 
 class IBeforeSetAssignedEvent(IBeforeCollectionAssignedEvent):
     """
@@ -101,7 +98,7 @@ class IBeforeSequenceAssignedEvent(IBeforeCollectionAssignedEvent):
     Event for assigning sequences.
     """
 
-    object = Attribute(u"The sequence being assigned. May or may not be mutable.")
+    object = Attribute("The sequence being assigned. May or may not be mutable.")
 
 class IBeforeDictAssignedEvent(IBeforeIterableAssignedEvent):
     """
@@ -216,7 +213,7 @@ class VariantValidationError(sch_interfaces.ValidationError):
     errors = ()
 
     def __init__(self, field, value, errors):
-        super(VariantValidationError, self).__init__()
+        super().__init__()
         self.with_field_and_value(field, value)
         self.errors = errors
 
@@ -238,11 +235,11 @@ class VariantValidationError(sch_interfaces.ValidationError):
         return '\n'.join(lines)
 
     def __str__(self):
-        s = super(VariantValidationError, self).__str__()
+        s = super().__str__()
         return self._with_details(s, str)
 
     def __repr__(self):
-        s = super(VariantValidationError, self).__repr__()
+        s = super().__repr__()
         return self._with_details(s, repr)
 
 class IListOrTuple(sch_interfaces.IList):
