@@ -91,7 +91,7 @@ class TestEqHash(unittest.TestCase):
         assert thing1 != self # NotImplemented
 
     def test_eq_hash_mutates(self):
-
+        # pylint:disable=redefined-variable-type
         thing_nosuperhash = Thing()
         thing_superhash = Thing2() # initially, no superhashing required
 
@@ -192,7 +192,8 @@ class TestSuperHash(unittest.TestCase):
 
     def test_iterable(self):
         assert_that(hash(self.superhash([1, 3, 5])),
-                    is_(hash(self.superhash([x for x in [1, 3, 5]]))))
+                    # pylint:disable=unnecessary-comprehension
+                    is_(hash(self.superhash([x for x in (1, 3, 5)]))))
 
         assert_that(self.superhash([1, 2]), is_not(self.superhash([2, 1])))
         assert_that(hash(self.superhash([1, 2])), is_not(hash(self.superhash([2, 1]))))

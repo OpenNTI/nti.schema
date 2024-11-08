@@ -44,7 +44,7 @@ class TestInvalidValue(unittest.TestCase):
         with self.assertRaises(TypeError):
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                InvalidValue(value=1, field=2, other=3)
+                InvalidValue(value=1, field=2, other=3) # pylint:disable=pointless-exception-statement
 
         # simplefilter('error') doesn't work for DeprecationWarning
         # on Python 2, so we still get the TypeError
@@ -52,7 +52,7 @@ class TestInvalidValue(unittest.TestCase):
         with self.assertRaises(catch):
             with warnings.catch_warnings():
                 warnings.simplefilter("error")
-                InvalidValue(value=1, field=2, other=3)
+                InvalidValue(value=1, field=2, other=3) # pylint:disable=pointless-exception-statement
 
 
     def test_subclass(self):

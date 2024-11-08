@@ -2,10 +2,12 @@
  Changes
 =========
 
-1.16.1 (unreleased)
+1.17.0 (unreleased)
 ===================
 
-- Nothing changed yet.
+- Drop support for anything less than Python 3.10.
+- Add support for all current versions of Python, up to 3.13.
+- Use native namespace packages.
 
 
 1.16.0 (2021-05-08)

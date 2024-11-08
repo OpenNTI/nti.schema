@@ -14,10 +14,6 @@ vocabulary named ``Countries`` available::
   ...                      vocabulary="Countries")
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from zope import component
 from zope.schema.vocabulary import SimpleTerm as _SimpleTerm
 from zope.schema.vocabulary import SimpleVocabulary as _SimpleVocabulary
@@ -36,7 +32,7 @@ class CountryTerm(_SimpleTerm):
 
     def __init__(self, *args, **kwargs):
         self.flag = kwargs.pop('flag', None)
-        super(CountryTerm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     @classmethod
     def fromItem(cls, item):
@@ -63,7 +59,7 @@ class _CountryVocabulary(_SimpleVocabulary):
     def __contains__(self, token):
         return token in self.by_token
 
-def CountryVocabularyFactory(context):
+def CountryVocabularyFactory(_context):
     """
     A vocabulary factory.
     """

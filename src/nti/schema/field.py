@@ -10,22 +10,13 @@ to be imported from this module.
 .. TODO: This module is big enough it should be factored into a package and sub-modules.
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 # stdlib imports
 import numbers
 import re
 
-try:
-    import collections.abc as abcs
-except ImportError: # pragma: no cover
-    # Python 2
-    import collections as abcs
+import collections.abc as abcs
 
-from six import string_types
-from six import text_type
+
 from zope import interface
 from zope import schema
 from zope.deferredimport import deprecatedFrom
@@ -142,6 +133,14 @@ deprecatedFrom(
     'SchemaConfigured',
 )
 
+# Stupid pylint doesn't understand how Interfaces work
+# pylint:disable=no-value-for-parameter
+
+# We don't care, they're positional
+# pylint:disable=arguments-renamed
+
+# Little control over this.
+# pylint:disable=too-many-ancestors
 
 def _do_set(self, context, value, cls, factory):
     try:
@@ -167,6 +166,8 @@ def __with_set(eventfactory=BeforeSchemaFieldAssignedEvent):
     return X
 
 def _fixup_Object_field(field, early_error=False):
+    # TODO: Refactor and simplify.
+    # pylint:disable=too-complex
     # If possible, make the field provide IFromObject
     if not IFromObject.providedBy(field):
         if isinstance(field, _ObjectBase):
@@ -228,7 +229,7 @@ class FieldValidationMixin(object):
     """
 
     @property
-    def __fixup_name__(self):
+    def __fixup_name__(self): # pylint:disable=bad-dunder-name
         """
         The :class:`zope.schema.fieldproperty.FieldPropertyStoredThroughField` class mangles
         the field name; this undoes that mangling.
@@ -263,8 +264,8 @@ class FieldValidationMixin(object):
     def _fixup_too_short(self, e, value):
         # Note we're capitalizing the field in the message.
         e.i18n_message = _(
-            u'${field} is too short. Please use at least one character.',
-            msgid_plural=u'${field} is too short. Please use at least ${minLength} characters.',
+            '${field} is too short. Please use at least one character.',
+            msgid_plural='${field} is too short. Please use at least ${minLength} characters.',
             mapping={'field': self.__fixup_name__.capitalize(),
                      'minLength': e.bound},
             number=e.bound
@@ -275,7 +276,7 @@ class FieldValidationMixin(object):
 
     def _fixup_too_long(self, e, value):
         e.i18n_message = _(
-            u'${field} is too long. ${max_size} character limit.',
+            '${field} is too long. ${max_size} character limit.',
             mapping={'field': self.__fixup_name__.capitalize(),
                      'max_size': e.bound}
         )
@@ -285,7 +286,7 @@ class FieldValidationMixin(object):
 
     def _validate(self, value):
         try:
-            super(FieldValidationMixin, self)._validate(value)
+            super()._validate(value)
         except sch_interfaces.WrongType as e:
             assert e.expected_type is not None, "The expected_type should be provided"
             raise
@@ -319,7 +320,7 @@ class ValidDatetime(FieldValidationMixin, Datetime):
 
     def _validate(self, value):
         try:
-            super(ValidDatetime, self)._validate(value)
+            super()._validate(value)
         except sch_interfaces.WrongType as e:
             raise sch_interfaces.SchemaNotProvided(
                 value, e.__doc__,
@@ -365,7 +366,7 @@ class _FieldConverter(object):
         if isinstance(value, bytes) and self.fromBytes is not None:
             return self.fromBytes(value)
 
-        if isinstance(value, text_type) and self.fromUnicode is not None:
+        if isinstance(value, str) and self.fromUnicode is not None:
             return self.fromUnicode(value)
 
         if self.fromObject is not None:
@@ -429,7 +430,7 @@ class Variant(FieldValidationMixin, schema.Field):
             f.__parent__ = self
 
         self._raise_when_provided = variant_raise_when_schema_provided
-        super(Variant, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def __get_name(self):
         return self.__dict__.get('__name__', '')
@@ -441,7 +442,7 @@ class Variant(FieldValidationMixin, schema.Field):
     __name__ = property(__get_name, __set_name)
 
     def getExtraDocLines(self):
-        lines = super(Variant, self).getExtraDocLines()
+        lines = super().getExtraDocLines()
         lines.append(".. rubric:: Possible Values")
 
         for field in self.fields:
@@ -460,14 +461,14 @@ class Variant(FieldValidationMixin, schema.Field):
     def bind(self, context):
         # The fields member really does exist
         # pylint:disable=no-member
-        clone = super(Variant, self).bind(context)
+        clone = super().bind(context)
         clone.fields = [x.bind(context) for x in clone.fields]
         for f in clone.fields:
             f.__parent__ = clone
         return clone
 
     def _validate(self, value):
-        super(Variant, self)._validate(value)
+        super()._validate(value)
         errors = []
         for field in self.fields:
             try:
@@ -479,7 +480,7 @@ class Variant(FieldValidationMixin, schema.Field):
                         and hasattr(field, 'schema')
                         and field.schema.providedBy(value)):
                     self._reraise_validation_error(e, value)
-                    raise AssertionError("This is never reached")
+                    raise AssertionError("This is never reached") from e
 
                 errors.append(e)
         try:
@@ -540,7 +541,7 @@ class Variant(FieldValidationMixin, schema.Field):
             ex = errors = None
 
     _EVENT_TYPES = (
-        (string_types, BeforeTextAssignedEvent),
+        (str, BeforeTextAssignedEvent),
         (abcs.Mapping, BeforeDictAssignedEvent),
         (abcs.Sequence, BeforeSequenceAssignedEvent),
         (object, BeforeObjectAssignedEvent)
@@ -566,7 +567,7 @@ class ObjectLen(FieldValidationMixin, schema.MinMaxLen, _ObjectBase):  # order m
         # argument for schema.
         # But to work with the superclass, we have to pass it as a keyword arg.
         # it's weird.
-        super(ObjectLen, self).__init__(schema=sch,
+        super().__init__(schema=sch,
                                         min_length=min_length,
                                         max_length=max_length,
                                         **kwargs)
@@ -575,13 +576,13 @@ class Int(FieldValidationMixin, schema.Int):
 
     def fromUnicode(self, value):
         # Allow empty strings
-        result = super(Int, self).fromUnicode(value) if value else None
+        result = super().fromUnicode(value) if value else None
         return result
 
 class Float(FieldValidationMixin, schema.Float):
 
     def fromUnicode(self, value):
-        result = super(Float, self).fromUnicode(value) if value else None
+        result = super().fromUnicode(value) if value else None
         return result
 
 class Number(FieldValidationMixin, schema.Float):
@@ -639,7 +640,7 @@ class DecodingValidTextLine(ValidTextLine):
     def validate(self, value):
         if isinstance(value, bytes):
             value = value.decode('utf-8')  # let raise UnicodeDecodeError
-        super(DecodingValidTextLine, self).validate(value)
+        super().validate(value)
         return value # tests
 
     # fromUnicode calls validate, so no need to duplicate
@@ -668,11 +669,11 @@ class StrippedValidTextLine(DecodingValidTextLine):
 
     def fromUnicode(self, value):
         v = value.strip() if value else value
-        result = super(StrippedValidTextLine, self).fromUnicode(v)
+        result = super().fromUnicode(v)
         return result
 
     def _validate(self, value):
-        super(StrippedValidTextLine, self)._validate(value)
+        super()._validate(value)
         if not value or _is_stripped(value):
             return
 
@@ -683,7 +684,7 @@ class ValidRegularExpression(ValidTextLine):
     def __init__(self, pattern, flags=(re.U|re.I|re.M), *args, **kwargs): # pylint:disable=keyword-arg-before-vararg
         # XXX: How would we actually fix this? It should be possible on
         # Python 3
-        super(ValidRegularExpression, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.flags = flags
         self.pattern = pattern
         self.prog = re.compile(pattern, flags)
@@ -704,7 +705,7 @@ class ValidURI(FieldValidationMixin, schema.URI):
             e.args = (value, e.__doc__, self.__fixup_name__)
             e.message = e.i18n_message = e.__doc__
         else: # pragma: no cover
-            super(ValidURI, self)._fixup_validation_error_args(e, value)
+            super()._fixup_validation_error_args(e, value)
 
 class HTTPURL(ValidURI):
     """
@@ -720,11 +721,11 @@ class HTTPURL(ValidURI):
         orig_value = value
         if value:
             lower = value.lower()
-            if not lower.startswith(u'http://') and not lower.startswith(u'https://'):
+            if not lower.startswith('http://') and not lower.startswith('https://'):
                 # assume http
-                value = u'http://' + value
-        result = super(HTTPURL, self).fromUnicode(value)
-        if result.count(u':') != 1:
+                value = 'http://' + value
+        result = super().fromUnicode(value)
+        if result.count(':') != 1:
             self._reraise_validation_error(
                 sch_interfaces.InvalidURI(orig_value).with_field_and_value(self, orig_value),
                 orig_value,
@@ -740,11 +741,12 @@ class _ValueTypeAddingDocMixin(object):
     """
 
     def getExtraDocLines(self):
-        lines = super(_ValueTypeAddingDocMixin, self).getExtraDocLines()
+        lines = super().getExtraDocLines()
         accept_types = getattr(self, 'accept_types', None)
         if accept_types:
             # Private helper. If it goes away or changes, making sphinx docs will
             # fail, but we shouldn't have any runtime problems.
+            # pylint:disable-next=import-private-name
             from zope.schema._bootstrapfields import _DocStringHelpers
             lines.append(_DocStringHelpers.make_class_field('Accepted Types', accept_types))
         return lines
@@ -767,7 +769,7 @@ class IndexedIterable(_ValueTypeAddingDocMixin, FieldValidationMixin, schema.Seq
 
 @interface.implementer(IListOrTuple)
 class ListOrTuple(IndexedIterable):
-    "Restrict sequence values specifically to list and tuple."
+    """Restrict sequence values specifically to list and tuple."""
     _type = (list, tuple)
 
 
@@ -778,7 +780,7 @@ class _SequenceFromObjectMixin(object):
     _default_type = list
 
     def __init__(self, *args, **kwargs):
-        super(_SequenceFromObjectMixin, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._validate_contained_field(self.value_type)
 
     @classmethod
@@ -841,7 +843,7 @@ class _SequenceFromObject(_SequenceFromObjectMixin):
 class _MapFromObjectMixin(_SequenceFromObjectMixin):
 
     def __init__(self, *args, **kwargs):
-        super(_MapFromObjectMixin, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._validate_contained_field(self.key_type)
 
     def _do_convert_result(self, result):
@@ -916,7 +918,7 @@ class TupleFromObject(_ValueTypeAddingDocMixin,
     def validate(self, value):
         if isinstance(value, list):
             value = tuple(value)
-        super(TupleFromObject, self).validate(value)
+        super().validate(value)
 
 
 @__with_set(BeforeDictAssignedEvent)
@@ -996,7 +998,7 @@ class UniqueIterable(ValidSet):
         if 'min_length' not in kwargs:
             no_min_length = True
 
-        super(UniqueIterable, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         if no_min_length:
             self.min_length = None
 

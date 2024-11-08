@@ -37,8 +37,8 @@ class TestConfiguredVocabulary(unittest.TestCase):
         from zope.schema import Choice
 
         class IA(Interface):
-            choice = Choice(title=u"Choice",
-                            vocabulary=u"Countries")
+            choice = Choice(title="Choice",
+                            vocabulary="Countries")
 
         o = object()
 
@@ -48,7 +48,7 @@ class TestConfiguredVocabulary(unittest.TestCase):
         term = choice.vocabulary.getTermByToken('us')
         assert_that(term, has_property('value', "United States"))
         ext = term.toExternalObject()
-        assert_that(ext, has_entry('flag', u'/++resource++country-flags/us.gif'))
+        assert_that(ext, has_entry('flag', 'countryflag/us'))
         assert_that(ext, has_entry('title', 'United States'))
 
         schema = JsonSchemafier(IA).make_schema()

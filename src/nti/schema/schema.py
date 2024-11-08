@@ -106,6 +106,7 @@ def schemadict(spec):
             (name, attr)
             for name, attr
             in iface.namesAndDescriptions()
+            # pylint:disable=no-value-for-parameter
             if name not in result and is_field(attr)
         )
 
@@ -210,7 +211,7 @@ class SchemaConfigured(object):
 
 
     @classmethod
-    def sc_changed(cls, orig_changed=None):
+    def sc_changed(cls, orig_changed=None): # pylint:disable=unused-argument
         """
         Call this method if you assign a fieldproperty to this class after creation.
         """
@@ -246,11 +247,11 @@ class PermissiveSchemaConfigured(SchemaConfigured):
 
     def __init__(self, **kwargs):
         if not self.SC_PERMISSIVE:
-            super(PermissiveSchemaConfigured, self).__init__(**kwargs)
+            super().__init__(**kwargs)
         else:
             _schema = schemadict(self.sc_schema_spec())
-            kwargs = {k: kwargs[k] for k in kwargs if k in _schema}
-            super(PermissiveSchemaConfigured, self).__init__(**kwargs)
+            kwargs = {k: v for k,v in kwargs.items() if k in _schema}
+            super().__init__(**kwargs)
 
 
 deprecatedFrom("Moved to nti.schema.eqhash",

@@ -5,13 +5,7 @@ Helpers for hashing and equality based on a list of names.
 
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import operator
-
-import six
 
 __docformat__ = "restructuredtext en"
 
@@ -25,9 +19,9 @@ def _superhash_force(value):
         # mutable iterable, which we must not sort
         items = value
 
-    return tuple([_superhash(item)
+    return tuple(_superhash(item)
                   for item
-                  in items])
+                  in items)
 
 def _superhash(value):
     """
@@ -43,10 +37,9 @@ def _superhash(value):
         # just fine returning the hash value....except, Python 3 changes this
         # and the hash is less often the same. So we go back to hashing things twice.
         hash(value)
+        return value
     except TypeError:
         return _superhash_force(value)
-    else:
-        return value
 
 def EqHash(*names,
            **kwargs):
@@ -112,7 +105,7 @@ def EqHash(*names,
         return cls
     return x
 
-def _make_eq(cls, names, include_super, include_type):
+def _make_eq(cls, names, include_super, include_type): # pylint:disable=unused-argument
     # 1 and 0 are constants and faster to load than the globals True/False
     # (in python 2)
 
@@ -144,11 +137,12 @@ def _make_eq(cls, names, include_super, include_type):
 
     # Must use a custom dictionary under Py3
     lcls = dict(locals())
-    six.exec_(eq_stmt, globals(), lcls)
+    exec(eq_stmt, globals(), lcls) # pylint:disable=exec-used
 
     return lcls['__eq__']
 
-def _eq_hash(cls, names, include_super, include_type, superhash): # pylint:disable=I0011,W0622,R0912
+def _eq_hash(cls, names, include_super, include_type, superhash):
+    # pylint:disable=too-complex
     names = tuple((str(x) for x in names)) # make sure they're native strings, not unicode on Py2
     # We assume the class hierarchy of these objects does not change
     if include_super:
@@ -200,9 +194,9 @@ def _eq_hash(cls, names, include_super, include_type, superhash): # pylint:disab
             # Snap. Lets hope that we already checked on what needs to be superhashed
             # and if so we'll try that.
             try:
-                return hash(tuple([transformer(value) if transformer is not None else value
+                return hash(tuple(transformer(value) if transformer is not None else value
                                    for transformer, value
-                                   in zip(transformers, values)]))
+                                   in zip(transformers, values)))
             except TypeError:
                 # Snap. Something changed.
                 for i, value in enumerate(values):
@@ -227,9 +221,9 @@ def _eq_hash(cls, names, include_super, include_type, superhash): # pylint:disab
                         transformers[i] = _superhash_force
 
             # Ok, good to go. Let's try it.
-            return hash(tuple([transformer(value) if transformer is not None else value
+            return hash(tuple(transformer(value) if transformer is not None else value
                                for transformer, value
-                               in zip(transformers, values)]))
+                               in zip(transformers, values)))
     else:
         # No need to try to wrap in a tuple or anything, we can
         # just directly call the hash builtin. We'll get passed either

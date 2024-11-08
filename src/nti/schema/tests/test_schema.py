@@ -133,9 +133,9 @@ class TestConfigured(unittest.TestCase):
             pass
 
         x = X()
-        dict_field.set(x, dict_field.fromObject({u'k': u'1'}))
+        dict_field.set(x, dict_field.fromObject({'k': '1'}))
 
-        assert_that(x, has_property('dict', {u'k': 1.0}))
+        assert_that(x, has_property('dict', {'k': 1.0}))
 
         events = eventtesting.getEvents(IBeforeDictAssignedEvent)
         assert_that(events, has_length(1))
@@ -208,7 +208,7 @@ class TestSchemadict(unittest.TestCase):
             field1 = Number()
 
         if make_v_attr_exist:
-            IA.get('field1')
+            IA.get('field1') # pylint:disable=no-value-for-parameter
             self.assertIsNotNone(IA._v_attrs)
         else:
             self.assertIsNone(IA._v_attrs)

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import codecs
-from setuptools import setup, find_packages
+from setuptools import setup
+from setuptools import find_namespace_packages
 
 version = '1.16.1.dev0'
 
@@ -33,26 +34,24 @@ setup(
         'License :: OSI Approved :: Apache Software License',
         'Natural Language :: English',
         'Operating System :: OS Independent',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3 :: Only',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Framework :: Zope3',
     ],
-    packages=find_packages('src'),
+    packages=find_namespace_packages(where='src'),
     package_dir={'': 'src'},
     include_package_data=True,
     zip_safe=True,
     install_requires=[
         'Acquisition',
-        'nti.i18n',
-        'six',
-        'setuptools',
+        'nti.i18n >= 1.1.0',
         'zope.event',
         'zope.interface >= 5.0.0',
         'zope.schema >= 6.0.0',
@@ -71,12 +70,12 @@ setup(
             'zope.component >= 4.6.1', # consistent IRO
         ],
         'docs': [
-            'Sphinx < 4', # 4 breaks autointerface 0.8
+            'Sphinx', # 4 breaks autointerface 0.8
             'nti.testing',
             'repoze.sphinx.autointerface',
             'sphinx_rtd_theme',
         ],
     },
-    namespace_packages=['nti'],
     entry_points=entry_points,
+    python_requires=">=3.10",
 )
