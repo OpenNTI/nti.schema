@@ -111,7 +111,7 @@ class TestCreateFieldProperties(unittest.TestCase):
         b_dict = dict(B.__dict__)
         b_dict.pop('__static_attributes__', None)
         b_dict.pop('__firstlineno__', None)
-        assert_that(B.__dict__, has_length(5))
+        assert_that(b_dict, has_length(5))
 
 class TestUnicodeFieldProperty(unittest.TestCase):
 
