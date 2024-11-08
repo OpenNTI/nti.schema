@@ -351,12 +351,12 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-    'https://docs.python.org/': None,
-    'http://www.zodb.org/en/latest/': None,
-    'https://zopeschema.readthedocs.io/en/latest/': None,
-    'https://zopecomponent.readthedocs.io/en/latest/': None,
-    'https://zopei18nmessageid.readthedocs.io/en/latest/': None,
-    'https://ntitesting.readthedocs.io/en/latest/': None,
+    'python': ('https://docs.python.org/', None),
+    'zodb': ('http://www.zodb.org/en/latest/', None),
+    'schema': ('https://zopeschema.readthedocs.io/en/latest/', None),
+    'component': ('https://zopecomponent.readthedocs.io/en/latest/', None),
+    'i18n': ('https://zopei18nmessageid.readthedocs.io/en/latest/', None),
+    'testing': ('https://ntitesting.readthedocs.io/en/latest/', None),
 }
 
 extlinks = {'issue': ('https://github.com/NextThought/nti.schema/issues/%s',

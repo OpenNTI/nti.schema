@@ -59,7 +59,7 @@ jobs:
       if: matrix.python-version == '3.12'
       run: |
         python -m pip install -U pylint
-        pylint nti.transactions
+        pylint nti.schema
     - name: Submit to Coveralls
       uses: coverallsapp/github-action@v2
       with:
