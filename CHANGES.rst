@@ -2,7 +2,7 @@
  Changes
 =========
 
-1.18.0 (unreleased)
+1.18.0 (2024-11-18)
 ===================
 
 - Make ``nti.schema.field.FieldConverter`` a public utility class.
