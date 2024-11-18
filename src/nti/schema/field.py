@@ -325,7 +325,7 @@ class ValidDatetime(FieldValidationMixin, Datetime):
             raise sch_interfaces.SchemaNotProvided(
                 value, e.__doc__,
                 self.__fixup_name__, self.schema,
-                list(interface.providedBy(value))).with_field_and_value(self, value)
+                list(interface.providedBy(value))).with_field_and_value(self, value) from e
 
         # schema has to be provided by value
         if not self.schema.providedBy(value):  # pragma: no cover
@@ -340,7 +340,19 @@ class Object(FieldValidationMixin, _ObjectBase):
     Improved ``zope.schema.Object``.
     """
 
-class _FieldConverter(object):
+class FieldConverter:
+    """
+    A convenient callable object that uses the best version of a
+    "from" method to attempt to convert a value to be used by a field.
+
+    In order, these are
+
+        - fromBytes
+        - fromUnicode
+        - fromObject
+
+    .. versionadded: NEXT
+    """
 
     def __init__(self, field):
         self.field = field
@@ -385,6 +397,17 @@ class _FieldConverter(object):
                 ex.value = value
             raise
 
+    def __repr__(self):
+        return '<FieldConverter for %r>' % (
+            self.field
+        )
+
+    def __str__(self):
+        return '<FieldConverter for %s>' % (
+            self.field
+        )
+
+_FieldConverter = FieldConverter # BWC alias
 
 @interface.implementer(IVariant)
 class Variant(FieldValidationMixin, schema.Field):
