@@ -2,7 +2,7 @@
  Changes
 =========
 
-1.19.0 (unreleased)
+1.19.0 (2025-11-14)
 ===================
 
 - Add support for Python 3.14; drop Python < 3.12.
