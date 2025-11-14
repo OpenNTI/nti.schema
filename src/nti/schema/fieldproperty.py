@@ -9,8 +9,7 @@ Computed attributes based on schema fields.
 # stdlib imports
 import sys
 
-from Acquisition import aq_base
-from Acquisition.interfaces import IAcquirer
+
 from zope.schema import interfaces as sch_interfaces
 from zope.schema.fieldproperty import FieldProperty
 from zope.schema.fieldproperty import FieldPropertyStoredThroughField
@@ -18,22 +17,28 @@ from zope.schema.fieldproperty import createFieldProperties
 
 __docformat__ = "restructuredtext en"
 
-class AcquisitionFieldProperty(FieldProperty):
-    """
-    A field property that supports acquisition. Returned objects
-    will be ``__of__`` the instance, and set objects will always be the unwrapped
-    base.
-    """
+try:
+    from Acquisition import aq_base
+    from Acquisition.interfaces import IAcquirer
+except ModuleNotFoundError:
+    pass
+else:
+    class AcquisitionFieldProperty(FieldProperty):
+        """
+        A field property that supports acquisition. Returned objects
+        will be ``__of__`` the instance, and set objects will always be the unwrapped
+        base.
+        """
 
-    def __get__(self, instance, klass):
-        result = super().__get__(instance, klass)
-        # pylint:disable-next=no-value-for-parameter
-        if instance is not None and IAcquirer.providedBy(result):  # even defaults get wrapped
-            result = result.__of__(instance)
-        return result
+        def __get__(self, instance, klass):
+            result = super().__get__(instance, klass)
+            # pylint:disable-next=no-value-for-parameter
+            if instance is not None and IAcquirer.providedBy(result):  # even defaults get wrapped
+                result = result.__of__(instance)
+            return result
 
-    def __set__(self, instance, value):
-        super().__set__(instance, aq_base(value))
+        def __set__(self, instance, value):
+            super().__set__(instance, aq_base(value))
 
 class UnicodeConvertingFieldProperty(FieldProperty):
     """

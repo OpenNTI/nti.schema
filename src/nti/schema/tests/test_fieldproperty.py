@@ -12,8 +12,7 @@ from __future__ import print_function
 import doctest
 import unittest
 
-from Acquisition import Implicit
-from ExtensionClass import Base
+
 from zope.interface import Interface
 from zope.interface import implementer
 from zope.schema.interfaces import SchemaNotProvided
@@ -21,7 +20,6 @@ from zope.schema.interfaces import WrongType
 
 from nti.schema.field import Object
 from nti.schema.field import ValidTextLine as TextLine
-from nti.schema.fieldproperty import AcquisitionFieldProperty
 from nti.schema.fieldproperty import AdaptingFieldProperty
 from nti.schema.fieldproperty import AdaptingFieldPropertyStoredThroughField
 from nti.schema.fieldproperty import UnicodeConvertingFieldProperty
@@ -50,6 +48,13 @@ does_not = is_not
 class TestAqFieldProperty(unittest.TestCase):
 
     def test_aq_property(self):
+        try:
+            from Acquisition import Implicit
+            from ExtensionClass import Base
+        except ModuleNotFoundError:
+            self.skipTest('Acquisition not installed')
+
+        from nti.schema.fieldproperty import AcquisitionFieldProperty
 
         class IBaz(Interface):
             pass

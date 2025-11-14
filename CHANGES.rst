@@ -2,10 +2,11 @@
  Changes
 =========
 
-1.18.1 (unreleased)
+1.19.0 (unreleased)
 ===================
 
-- Nothing changed yet.
+- Add support for Python 3.14; drop Python < 3.12.
+- Acquisition is now an optional dependency, not installed by default.
 
 
 1.18.0 (2024-11-18)
