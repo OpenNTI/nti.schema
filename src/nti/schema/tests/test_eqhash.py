@@ -33,7 +33,7 @@ class Thing(object):
     a = 'a'
     b = 'b'
 
-@EqHash('a', 'b', superhash=True)
+@EqHash('a', 'b', superhash=True, supereq=True)
 class Thing2(object):
     a = 'a'
     b = 'b'
@@ -68,6 +68,24 @@ class ManyThing(object):
     f = 'f'
 
 class TestEqHash(unittest.TestCase):
+
+    def test_eq_hash_list_tuple(self):
+        thing1_a = Thing()
+        thing1_b = Thing()
+        # Lists and tuples can't be compared.
+        thing1_a.a = ()
+        thing1_b.a = []
+        self.assertNotEqual(thing1_a, thing1_b)
+
+        # sets and frozensets can
+        thing1_a.a = set() # pylint: disable=redefined-variable-type
+        thing1_b.a = frozenset() # pylint: disable=redefined-variable-type
+        self.assertEqual(thing1_a, thing1_b)
+
+        # thing2 uses superhash to compare lists and tuples
+        thing2_a = Thing2(a=[])
+        thing2_b = Thing2(a=())
+        self.assertEqual(thing2_a, thing2_b)
 
     def test_eq_hash(self):
 

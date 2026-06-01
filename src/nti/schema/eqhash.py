@@ -44,7 +44,7 @@ def _superhash(value):
 def EqHash(*names,
            **kwargs):
     """
-    EqHash(*names, include_super=False, superhash=False, include_type=False)
+    EqHash(*names, include_super=False, superhash=False, supereq=False, include_type=False)
 
     A class decorator factory for the common pattern of writing
     ``__eq__``/``__ne__`` and ``__hash__`` methods that check the same
@@ -70,6 +70,16 @@ def EqHash(*names,
       >>> hash(ChildThing()) != hash(Thing()) != 0
       True
 
+
+      >>> @EqHash('d', supereq=True)
+      ... class Thing2:
+      ...      def __init__(self, d): self.d = d
+      >>> Thing2([]) == Thing2(())
+      True
+      >>> Thing2(set()) == Thing2(frozenset())
+      True
+
+
     :keyword include_super: If set to ``True`` (*not* the default)
         then the equality (and perhaps hash) values of super will be considered.
     :keyword superhash: If set to ``True`` (*not* the default),
@@ -77,6 +87,11 @@ def EqHash(*names,
         mutable types (lists and dictionaries) that ordinarily cannot
         be hashed. Use this only when those items are functionally
         treated as immutable.
+    :keyword bool supereq: If set to ``True`` (*not* the default),
+        then the equality method will treat lists and tuples as being
+        equal. This is useful, for example, when you have a class
+        default that's an immutable tuple, but instances might
+        have their own list value (containing the same data)
     :keyword include_type: If set to ``True`` (*not* the default),
         equality will only be true if the other object is an instance
         of the class this is declared on. Use this only when there are
@@ -84,10 +99,14 @@ def EqHash(*names,
         compare equal to each other. Note that this can lead to violating
         the commutative property.
 
+    .. versionchanged:: NEXT
+       Make *superhash* apply to the equality operator as well for
+       comparing mutable and immutable objects.
     """
 
     _include_super = kwargs.pop('include_super', False)
     superhash = kwargs.pop("superhash", False)
+    supereq = kwargs.pop('supereq', False)
     _include_type = kwargs.pop('include_type', False)
 
     if kwargs:
@@ -98,14 +117,15 @@ def EqHash(*names,
 
     def x(cls):
         __eq__, __hash__, __ne__ = _eq_hash(cls, names,
-                                            _include_super, _include_type, superhash)
+                                            _include_super, _include_type, superhash,
+                                            supereq)
         cls.__eq__ = __eq__
         cls.__hash__ = __hash__
         cls.__ne__ = __ne__
         return cls
     return x
 
-def _make_eq(cls, names, include_super, include_type): # pylint:disable=unused-argument
+def _make_eq(cls, names, include_super, include_type, supereq): # pylint:disable=unused-argument
     # 1 and 0 are constants and faster to load than the globals True/False
     # (in python 2)
 
@@ -131,9 +151,21 @@ def _make_eq(cls, names, include_super, include_type): # pylint:disable=unused-a
         eq_stmt += '    a = self.' + name + '\n'
         eq_stmt += '    try:\n        b = other.' + name + '\n'
         eq_stmt += '    except AttributeError: return NotImplemented\n'
-        eq_stmt += '    if a != b: return 0\n\n'
+        if supereq:
+            # pylint:disable-next=line-too-long
+            eq_stmt += '    if a != b and type(a) != type(b):\n'
+            # We use isinstance rather than exact ``type(a) in (list, tuple)`` to work for
+            # subclasses of the standard library classes, like named tuples. However, the
+            # consequence is that if the user-subclass defined special behaviour, we lose
+            # it. That's why we check a!=b FIRST so if there was custom behaviour that
+            # made it pass, it still gets called. The cost is calling the __ne__ method twice.
+            eq_stmt += '        if isinstance(a, (list, tuple)) and isinstance(b, (list,tuple)):\n'
+            eq_stmt += '            a = tuple(a); b = tuple(b)\n'
+            # sets and frozensets compare correctly automatically.
+            eq_stmt += '        else: return False\n'
+        eq_stmt += '    if a != b: return False\n\n'
 
-    eq_stmt += '    return 1'
+    eq_stmt += '    return True'
 
     # Must use a custom dictionary under Py3
     lcls = dict(locals())
@@ -141,15 +173,16 @@ def _make_eq(cls, names, include_super, include_type): # pylint:disable=unused-a
 
     return lcls['__eq__']
 
-def _eq_hash(cls, names, include_super, include_type, superhash):
-    # pylint:disable=too-complex
+def _eq_hash(cls, names, include_super, include_type,
+             superhash=False, supereq=False):
+    # pylint:disable=too-complex,too-many-locals,too-many-positional-arguments
     names = tuple((str(x) for x in names)) # make sure they're native strings, not unicode on Py2
     # We assume the class hierarchy of these objects does not change
     if include_super:
         superclass = cls.__mro__[1]
         superclass_hash = superclass.__hash__
 
-    __eq__ = _make_eq(cls, names, include_super, include_type)
+    __eq__ = _make_eq(cls, names, include_super, include_type, supereq)
 
     def __ne__(self, other):
         eq = __eq__(self, other)

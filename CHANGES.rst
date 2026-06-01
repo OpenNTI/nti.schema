@@ -2,10 +2,12 @@
  Changes
 =========
 
-1.19.1 (unreleased)
+1.20.0 (unreleased)
 ===================
 
-- Nothing changed yet.
+- Add support for Python 3.15.
+- Add ``EqHash(supereq=True)`` to also work for comparing mutable
+  and immutable lists/tuples.
 
 
 1.19.0 (2025-11-14)
