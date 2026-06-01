@@ -99,9 +99,9 @@ def EqHash(*names,
         compare equal to each other. Note that this can lead to violating
         the commutative property.
 
-    .. versionchanged:: NEXT
-       Make *superhash* apply to the equality operator as well for
-       comparing mutable and immutable objects.
+    .. versionchanged:: 1.20.0
+       Add *supereq* to the equality operator for
+       comparing mutable and immutable objects (tuple/list).
     """
 
     _include_super = kwargs.pop('include_super', False)
