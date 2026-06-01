@@ -51,7 +51,7 @@ class TestAqFieldProperty(unittest.TestCase):
         try:
             from Acquisition import Implicit
             from ExtensionClass import Base
-        except ModuleNotFoundError:
+        except ModuleNotFoundError: # pragma: no cover
             self.skipTest('Acquisition not installed')
 
         from nti.schema.fieldproperty import AcquisitionFieldProperty

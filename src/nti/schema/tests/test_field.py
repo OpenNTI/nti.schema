@@ -829,6 +829,10 @@ class Test_FieldConverter(unittest.TestCase):
         assert_that(converter(''), is_('from unicode'))
         assert_that(converter(1), is_(b'from object'))
 
+    def test_cover(self):
+        converter = self._makeOne(True)
+        self.assertEqual(str(converter), '<FieldConverter for True>')
+
 class TestFunctions(unittest.TestCase):
 
     def test_fixup_Object_field_mapping_requires_key_and_value(self):
