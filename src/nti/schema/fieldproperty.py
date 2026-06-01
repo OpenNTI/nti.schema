@@ -20,7 +20,7 @@ __docformat__ = "restructuredtext en"
 try:
     from Acquisition import aq_base
     from Acquisition.interfaces import IAcquirer
-except ModuleNotFoundError: # progma: no cover
+except ModuleNotFoundError: # pragma: no cover
     pass
 else:
     class AcquisitionFieldProperty(FieldProperty):
