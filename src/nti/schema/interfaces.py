@@ -6,23 +6,19 @@ Interfaces describing the events and fields this package uses.
 Also utility functions.
 """
 
-import warnings
 import traceback
+import warnings
+from collections import abc as abcs
 
 from zope.deprecation import deprecated
-
+from zope.interface import Attribute
+from zope.interface import Interface
+from zope.interface import implementer
+from zope.interface import providedBy
 from zope.schema import Text
 from zope.schema import TextLine
-from zope.interface import Interface
-from zope.interface import Attribute
-from zope.interface import providedBy
-from zope.interface import implementer
 from zope.schema import interfaces as sch_interfaces
-try:
-    from zope.schema._bootstrapfields import BeforeObjectAssignedEvent
-except ImportError: # pragma: no cover
-    # BWC for older zope.schema.
-    from zope.schema._field import BeforeObjectAssignedEvent
+from zope.schema._bootstrapfields import BeforeObjectAssignedEvent
 
 __docformat__ = "restructuredtext en"
 
@@ -210,9 +206,9 @@ class VariantValidationError(sch_interfaces.ValidationError):
     """
 
     #: A sequence of validation errors
-    errors = ()
+    errors: abcs.Sequence[BaseException] = ()
 
-    def __init__(self, field, value, errors):
+    def __init__(self, field, value, errors: abcs.Sequence[BaseException]) -> None:
         super().__init__()
         self.with_field_and_value(field, value)
         self.errors = errors

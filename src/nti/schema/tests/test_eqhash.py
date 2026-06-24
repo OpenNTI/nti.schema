@@ -195,7 +195,7 @@ class TestEqHash(unittest.TestCase):
     def test_bad_construct(self):
         assert_that(calling(EqHash), raises(TypeError, "Asking to hash"))
         assert_that(calling(EqHash).with_args(foo=True),
-                    raises(TypeError, "Unexpected keyword"))
+                    raises(TypeError, "unexpected keyword"))
 
 
 class TestSuperHash(unittest.TestCase):

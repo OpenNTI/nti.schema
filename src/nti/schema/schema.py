@@ -5,19 +5,18 @@ Helpers for writing code that implements schemas.
 
 This module contains code based on code originally from dm.zope.schema.
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+
+
+from collections import abc as abcs
 
 from zope.deferredimport import deprecatedFrom
-
+from zope.interface import implementer
+from zope.interface import providedBy
 from zope.interface.interfaces import IInterface
 from zope.interface.interfaces import ISpecification
-from zope.interface import providedBy
-from zope.interface import implementer
-
-from zope.schema.interfaces import IValidatable
+from zope.schema import Field
 from zope.schema.fieldproperty import FieldProperty
+from zope.schema.interfaces import IValidatable
 
 from .interfaces import ISchemaConfigured
 
@@ -34,7 +33,7 @@ def schemaitems(spec, _field_key=lambda x: x[1].order):
     sd = schemadict(spec)
     return sorted(sd.items(), key=_field_key)
 
-def schemadict(spec):
+def schemadict(spec) -> abcs.Mapping[str, Field]:
     """
     schemadict(spec) -> dict
 
@@ -99,7 +98,7 @@ def schemadict(spec):
     # returns everything up the hierarchy). It then indexes into the
     # object to get the attribute. We can save some steps at the cost
     # of explicit method calls (as opposed to slots)
-    result = {}
+    result: dict[str, Field] = {}
     is_field = IValidatable.providedBy
     for iface in iro:
         result.update(
@@ -141,7 +140,7 @@ class SchemaConfigured(object):
        no value was provided. Note that if the schema field contained in the
        ``FieldProperty`` did something funky in its ``bind()`` method to
        this object, that will no longer happen at construction time.
-       This can be turned of by setting ``SC_OPTIMIZE_FIELD_PROPERTY`` to false.
+       This can be turned off by setting ``SC_OPTIMIZE_FIELD_PROPERTY`` to false.
 
        If you add a FieldProperty to a ``SchemaConfigured`` class after an instance
        has been created, you must call ``sc_changed``.
@@ -149,7 +148,7 @@ class SchemaConfigured(object):
 
     SC_OPTIMIZE_FIELD_PROPERTY = True
 
-    def __init__(self, **kw):
+    def __init__(self, **kw) -> None:
         schema = schemadict(self.sc_schema_spec())
         for k, v in kw.items():
             # might want to control this check
@@ -189,7 +188,7 @@ class SchemaConfigured(object):
 
 
     @classmethod
-    def __find_FieldProperty_that_match_schema(cls, schema_dict):
+    def __find_FieldProperty_that_match_schema(cls, schema_dict) -> abcs.Collection[str]:
         result = set()
         for field_name, schema_field in schema_dict.items():
             try:

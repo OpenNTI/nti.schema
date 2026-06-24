@@ -3,3 +3,40 @@ requires = [
    "wheel",
    "setuptools>=75.3",
 ]
+
+[tool.mypy]
+# Must be present for mpypy to read this file.
+follow_imports = "normal"
+check_untyped_defs = true
+exclude = "tests/*"
+#ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# third-party untyped code
+module = [
+  "Acquisition.*",
+  "ZODB",
+  "zope.*",
+  "persistent.*",
+  "cpuinfo",
+  "nti.*",
+  "botocore.*",
+  "fsspec.*",
+  "transaction",
+  "grpc",
+  "grpc_health.*",
+  "google.type.*",
+  "zc.*",
+  "z3c.*",
+  "netaddr.*",
+  "dnslib",
+  "cytoolz.*",
+  "toolz.*",
+  "boto3.*",
+  "pg8000",
+  "urllib3.*",
+  "indexed_gzip",
+  "dm.zope.schema.interfaces",
+
+]
+ignore_missing_imports = true

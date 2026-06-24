@@ -5,7 +5,8 @@
 1.20.1 (unreleased)
 ===================
 
-- Nothing changed yet.
+- Add some minimal typing information. In particular this makes
+  subclasses of ``SchemaConfigured`` for type-friendly.
 
 
 1.20.0 (2026-06-01)

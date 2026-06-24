@@ -10,50 +10,45 @@ to be imported from this module.
 .. TODO: This module is big enough it should be factored into a package and sub-modules.
 """
 
+import collections.abc as abcs
 # stdlib imports
 import numbers
 import re
+from typing import Any
 
-import collections.abc as abcs
-
-
+import zope.interface.common.idatetime
 from zope import interface
 from zope import schema
-from zope.deferredimport import deprecatedFrom
-
-from zope.event import notify
-import zope.interface.common.idatetime
 from zope.cachedescriptors.property import Lazy
-
-from zope.schema import interfaces as sch_interfaces
-from zope.schema.interfaces import IFromBytes
-from zope.schema.interfaces import IFromUnicode
-from zope.schema.interfaces import InvalidValue
-
+from zope.deferredimport import deprecatedFrom
+from zope.event import notify
 from zope.schema import Bool
 from zope.schema import Choice
+from zope.schema import Complex
 from zope.schema import Date
 from zope.schema import Datetime
 from zope.schema import Decimal
 from zope.schema import Dict
 from zope.schema import FrozenSet
+from zope.schema import Integral
 from zope.schema import Iterable
 from zope.schema import List
 from zope.schema import Mapping
 from zope.schema import MutableMapping
 from zope.schema import MutableSequence
+from zope.schema import Object as _ObjectBase
+from zope.schema import Rational
+from zope.schema import Real
 from zope.schema import Sequence
 from zope.schema import Set
 from zope.schema import Text
 from zope.schema import TextLine
 from zope.schema import Timedelta
 from zope.schema import Tuple
-from zope.schema import Object as _ObjectBase
-
-from zope.schema import Complex
-from zope.schema import Real
-from zope.schema import Rational
-from zope.schema import Integral
+from zope.schema import interfaces as sch_interfaces
+from zope.schema.interfaces import IFromBytes
+from zope.schema.interfaces import IFromUnicode
+from zope.schema.interfaces import InvalidValue
 
 from nti.schema import MessageFactory as _
 from nti.schema.interfaces import BeforeDictAssignedEvent
@@ -67,7 +62,6 @@ from nti.schema.interfaces import IFromObject
 from nti.schema.interfaces import IListOrTuple
 from nti.schema.interfaces import IVariant
 from nti.schema.interfaces import VariantValidationError
-
 
 __docformat__ = "restructuredtext en"
 
@@ -286,7 +280,7 @@ class FieldValidationMixin(object):
 
     def _validate(self, value):
         try:
-            super()._validate(value)
+            super()._validate(value) # type:ignore[misc]
         except sch_interfaces.WrongType as e:
             assert e.expected_type is not None, "The expected_type should be provided"
             raise
@@ -431,7 +425,7 @@ class Variant(FieldValidationMixin, schema.Field):
        would be raised. Now, constructing the variant will raise a ``RequiredMissing``.
     """
 
-    fields = ()
+    fields: abcs.Sequence[schema.Field] = ()
 
     def __init__(self, fields, variant_raise_when_schema_provided=False, **kwargs):
         """
@@ -510,7 +504,7 @@ class Variant(FieldValidationMixin, schema.Field):
             raise VariantValidationError(self, value, errors)
         finally:
             # break cycles
-            e = errors = None
+            del errors
 
     def fromObject(self, obj):
         """
@@ -561,7 +555,7 @@ class Variant(FieldValidationMixin, schema.Field):
             raise VariantValidationError(self, obj, errors)
         finally:
             # break cycles
-            ex = errors = None
+            del errors
 
     _EVENT_TYPES = (
         (str, BeforeTextAssignedEvent),
@@ -672,8 +666,9 @@ class DecodingValidTextLine(ValidTextLine):
         return self.fromUnicode(value.decode('utf-8'))
 
 
-_not_stripped = r"^\s|\s$"  # space at either beginning or end
-_not_stripped = re.compile(_not_stripped).search
+_not_stripped = re.compile(
+     r"^\s|\s$"  # space at either beginning or end
+).search
 
 
 def _is_stripped(value):
@@ -764,7 +759,7 @@ class _ValueTypeAddingDocMixin(object):
     """
 
     def getExtraDocLines(self):
-        lines = super().getExtraDocLines()
+        lines = super().getExtraDocLines() # type:ignore[misc]
         accept_types = getattr(self, 'accept_types', None)
         if accept_types:
             # Private helper. If it goes away or changes, making sphinx docs will
@@ -799,8 +794,13 @@ class ListOrTuple(IndexedIterable):
 
 @interface.implementer(IFromObject)
 class _SequenceFromObjectMixin(object):
-    accept_types = None
+    accept_types: abcs.Sequence[type] | None = None
     _default_type = list
+    value_type: schema.Field
+    _type: type | abcs.Sequence[type] | None
+    missing_value: Any
+    required: bool
+    __name__: str
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -844,7 +844,7 @@ class _SequenceFromObjectMixin(object):
             return context
 
         check_type = self.accept_types or self._type
-        if check_type is not None and not isinstance(context, check_type):
+        if check_type is not None and not isinstance(context, check_type): # type:ignore[arg-type]
             raise sch_interfaces.WrongType(context, check_type).with_field_and_value(self, context)
 
         result = self._do_fromObject(context)
@@ -864,6 +864,7 @@ class _SequenceFromObject(_SequenceFromObjectMixin):
 
 
 class _MapFromObjectMixin(_SequenceFromObjectMixin):
+    key_type: schema.Field
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -891,7 +892,7 @@ class _MapFromObject(_MapFromObjectMixin):
         return getattr(self.__field, name)
 
 
-class ListOrTupleFromObject(_SequenceFromObjectMixin, ListOrTuple):
+class ListOrTupleFromObject(_SequenceFromObjectMixin, ListOrTuple): # type:ignore[misc]
     """
     The ``value_type`` MUST be a :class:`Variant`, or more generally,
     something supporting :class:`IFromObject`, :class:`IFromUnicode`
