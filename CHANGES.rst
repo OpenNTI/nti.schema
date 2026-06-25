@@ -2,7 +2,7 @@
  Changes
 =========
 
-1.20.1 (unreleased)
+1.20.1 (2026-06-25)
 ===================
 
 - Add some minimal typing information. In particular this makes
