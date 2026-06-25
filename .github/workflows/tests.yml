@@ -56,10 +56,12 @@ jobs:
         coverage combine || true
         coverage report -i || true
     - name: Lint
-      if: matrix.python-version == '3.12'
+      if: matrix.python-version == '3.14'
       run: |
         python -m pip install -U pylint
         pylint nti.schema
+        python -m pip install -U mypy
+        mypy --install-types --non-interactive src
     - name: Submit to Coveralls
       uses: coverallsapp/github-action@v2
       with:

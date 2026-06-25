@@ -30,9 +30,9 @@ class CountryTerm(_SimpleTerm):
     browserresource path to an icon representing the country.
     """
 
-    def __init__(self, *args, **kwargs):
-        self.flag = kwargs.pop('flag', None)
-        super().__init__(*args, **kwargs)
+    def __init__(self, value, token=None, title=None, *, flag=None) -> None:
+        self.flag = flag
+        super().__init__(value, token=token, title=title)
 
     @classmethod
     def fromItem(cls, item):

@@ -9,7 +9,7 @@ Computed attributes based on schema fields.
 # stdlib imports
 import sys
 
-
+from zope.interface import Attribute
 from zope.schema import interfaces as sch_interfaces
 from zope.schema.fieldproperty import FieldProperty
 from zope.schema.fieldproperty import FieldPropertyStoredThroughField
@@ -81,7 +81,7 @@ class AdaptingFieldProperty(FieldProperty):
     like strings.
     """
 
-    def __init__(self, field, name=None):
+    def __init__(self, field, name=None) -> None:
         self.schema = _find_schema_from_field(field)
         super().__init__(field, name=name)
 
@@ -94,14 +94,14 @@ class AdaptingFieldPropertyStoredThroughField(FieldPropertyStoredThroughField):
     like strings.
     """
 
-    def __init__(self, field, name=None):
+    def __init__(self, field, name=None) -> None:
         self.schema = _find_schema_from_field(field)
         super().__init__(field, name=name)
 
 AdaptingFieldPropertyStoredThroughField.__set__ = _make_adapter_set(
     AdaptingFieldPropertyStoredThroughField)
 
-def createDirectFieldProperties(__schema, omit=(), adapting=False):
+def createDirectFieldProperties(__schema, omit=(), adapting=False) -> None:
     """
     Like :func:`zope.schema.fieldproperty.createFieldProperties`, except
     only creates properties for fields directly contained within the
@@ -156,7 +156,7 @@ def createDirectFieldProperties(__schema, omit=(), adapting=False):
             __frame.f_locals[k] = v
 
 
-def field_name(field):
+def field_name(field: Attribute) -> str:
     """
     Produce a clean version of a field's name.
 

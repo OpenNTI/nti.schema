@@ -6,10 +6,11 @@ Helpers for hashing and equality based on a list of names.
 """
 
 import operator
+from collections import abc as abcs
 
 __docformat__ = "restructuredtext en"
 
-def _superhash_force(value):
+def _superhash_force(value) -> tuple:
     # Called when we know that we can't hash the value.
     # Dict?
     try:
@@ -41,11 +42,14 @@ def _superhash(value):
     except TypeError:
         return _superhash_force(value)
 
-def EqHash(*names,
-           **kwargs):
-    """
-    EqHash(*names, include_super=False, superhash=False, supereq=False, include_type=False)
 
+def EqHash[T: type](*names,
+                    include_super=False,
+                    superhash=False,
+                    supereq=False,
+                    include_type=False
+                    ) -> abcs.Callable[[T], T]:
+    """
     A class decorator factory for the common pattern of writing
     ``__eq__``/``__ne__`` and ``__hash__`` methods that check the same
     list of attributes on a given object.
@@ -104,13 +108,9 @@ def EqHash(*names,
        comparing mutable and immutable objects (tuple/list).
     """
 
-    _include_super = kwargs.pop('include_super', False)
-    superhash = kwargs.pop("superhash", False)
-    supereq = kwargs.pop('supereq', False)
-    _include_type = kwargs.pop('include_type', False)
+    _include_super = include_super
+    _include_type = include_type
 
-    if kwargs:
-        raise TypeError("Unexpected keyword args", kwargs)
     if not names and not _include_super and not _include_type:
         raise TypeError("Asking to hash/eq nothing, but not including super or type")
 
