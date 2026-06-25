@@ -3,7 +3,7 @@ import codecs
 from setuptools import setup
 from setuptools import find_namespace_packages
 
-version = '1.20.1'
+version = '1.20.2.dev0'
 
 entry_points = {
 }
