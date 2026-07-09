@@ -14,6 +14,7 @@ import collections.abc as abcs
 # stdlib imports
 import numbers
 import re
+from enum import StrEnum
 from typing import Any
 
 import zope.interface.common.idatetime
@@ -50,18 +51,19 @@ from zope.schema.interfaces import IFromBytes
 from zope.schema.interfaces import IFromUnicode
 from zope.schema.interfaces import InvalidValue
 
-from nti.schema import MessageFactory as _
-from nti.schema.interfaces import BeforeDictAssignedEvent
-from nti.schema.interfaces import BeforeObjectAssignedEvent
-from nti.schema.interfaces import BeforeSchemaFieldAssignedEvent
-from nti.schema.interfaces import BeforeSequenceAssignedEvent
-from nti.schema.interfaces import BeforeSetAssignedEvent
-from nti.schema.interfaces import BeforeTextAssignedEvent
-from nti.schema.interfaces import BeforeTextLineAssignedEvent
-from nti.schema.interfaces import IFromObject
-from nti.schema.interfaces import IListOrTuple
-from nti.schema.interfaces import IVariant
-from nti.schema.interfaces import VariantValidationError
+from . import MessageFactory as _
+from .interfaces import BeforeDictAssignedEvent
+from .interfaces import BeforeObjectAssignedEvent
+from .interfaces import BeforeSchemaFieldAssignedEvent
+from .interfaces import BeforeSequenceAssignedEvent
+from .interfaces import BeforeSetAssignedEvent
+from .interfaces import BeforeTextAssignedEvent
+from .interfaces import BeforeTextLineAssignedEvent
+from .interfaces import IFromObject
+from .interfaces import IListOrTuple
+from .interfaces import IVariant
+from .interfaces import IStrEnumChoice
+from .interfaces import VariantValidationError
 
 __docformat__ = "restructuredtext en"
 
@@ -154,10 +156,10 @@ def __make_set(cls, eventfactory):
     cls.set = set
 
 def __with_set(eventfactory=BeforeSchemaFieldAssignedEvent):
-    def X(cls):
+    def attach_set(cls):
         __make_set(cls, eventfactory)
         return cls
-    return X
+    return attach_set
 
 def _fixup_Object_field(field, early_error=False):
     # TODO: Refactor and simplify.
@@ -585,9 +587,9 @@ class ObjectLen(FieldValidationMixin, schema.MinMaxLen, _ObjectBase):  # order m
         # But to work with the superclass, we have to pass it as a keyword arg.
         # it's weird.
         super().__init__(schema=sch,
-                                        min_length=min_length,
-                                        max_length=max_length,
-                                        **kwargs)
+                         min_length=min_length,
+                         max_length=max_length,
+                         **kwargs)
 
 class Int(FieldValidationMixin, schema.Int):
 
@@ -616,6 +618,38 @@ class Number(FieldValidationMixin, schema.Float):
 @__with_set()
 class ValidChoice(FieldValidationMixin, schema.Choice):
     pass
+
+@interface.implementer(IStrEnumChoice)
+class StrEnumChoice(ValidChoice):
+    """
+    A Choice field that takes its values from
+    a :class:`~StrEnum`.
+
+    .. versionadded:: NEXT
+    """
+
+    def __init__(self, enum: type[StrEnum], **kwargs) -> None:
+        if 'values' in kwargs or 'source' in kwargs or 'vocabulary' in kwargs:
+            raise TypeError('Illegal keyword; values come from the enum')
+        super().__init__(
+            values=list(e.value for e in enum),
+            **kwargs
+        )
+        self.__enum = enum
+
+    @property
+    def enum(self):
+        return self.__enum
+
+    def fromUnicode(self, value):
+        # First validate the value is a member of the values
+        # list we provided (the enum members), raising
+        # the correct error if not.
+        value = super().fromUnicode(value)
+        # Then, return the actual enum member.
+        # Subscripting the class expects the
+        # attribute name; calling it expects the value.
+        return self.__enum(value)
 
 @__with_set()
 class ValidBytesLine(FieldValidationMixin, schema.BytesLine):

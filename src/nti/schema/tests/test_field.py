@@ -7,57 +7,52 @@ Tests for field.py
 # stdlib imports
 import unittest
 import warnings
+from enum import StrEnum
 
 from zope.component import eventtesting
-
 from zope.interface.common import interfaces as cmn_interfaces
 from zope.schema import Dict
-
 from zope.schema.fieldproperty import FieldProperty
-
-from zope.schema.interfaces import ValidationError
 from zope.schema.interfaces import InvalidURI
+from zope.schema.interfaces import InvalidValue
 from zope.schema.interfaces import SchemaNotProvided
 from zope.schema.interfaces import TooLong
 from zope.schema.interfaces import TooShort
+from zope.schema.interfaces import ValidationError
 from zope.schema.interfaces import WrongType
-from zope.schema.interfaces import InvalidValue
 
-from nti.schema.field import HTTPURL
-from nti.schema.field import DecodingValidTextLine
-from nti.schema.field import FieldValidationMixin
-from nti.schema.field import Float
-from nti.schema.field import IndexedIterable
-from nti.schema.field import Int
-from nti.schema.field import ListOrTuple
-from nti.schema.field import ListOrTupleFromObject
-from nti.schema.field import Number
-from nti.schema.field import Object
-from nti.schema.field import ObjectLen
-from nti.schema.field import StrippedValidTextLine
-from nti.schema.field import TupleFromObject
-from nti.schema.field import UniqueIterable
-from nti.schema.field import ValidDatetime
-from nti.schema.field import ValidRegularExpression
-from nti.schema.field import Variant
-from nti.schema.field import ValidTextLine as TextLine
-from nti.schema.interfaces import IBeforeDictAssignedEvent
-from nti.schema.interfaces import IBeforeSequenceAssignedEvent
+from ..field import HTTPURL
+from ..field import DecodingValidTextLine
+from ..field import FieldValidationMixin
+from ..field import Float
+from ..field import IndexedIterable
+from ..field import Int
+from ..field import ListOrTuple
+from ..field import ListOrTupleFromObject
+from ..field import Number
+from ..field import Object
+from ..field import ObjectLen
+from ..field import StrippedValidTextLine
+from ..field import TupleFromObject
+from ..field import UniqueIterable
+from ..field import ValidDatetime
+from ..field import ValidRegularExpression
+from ..field import ValidTextLine as TextLine
+from ..field import Variant
+from ..interfaces import IBeforeDictAssignedEvent
+from ..interfaces import IBeforeSequenceAssignedEvent
+from ..interfaces import IFromObject
+from ..interfaces import IVariant
+from ..interfaces import VariantValidationError
 
-from nti.schema.interfaces import IVariant
-from nti.schema.interfaces import IFromObject
-from nti.schema.interfaces import VariantValidationError
 # Import from the BWC location
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
-    from nti.schema.testing import validated_by # pylint:disable=no-name-in-module
-    from nti.schema.testing import verifiably_provides # pylint:disable=no-name-in-module
-    from nti.schema.testing import not_validated_by # pylint:disable=no-name-in-module
-
-
-from . import IUnicode
-from . import SchemaLayer
+    # pylint:disable=no-name-in-module
+    from nti.schema.testing import validated_by # type:ignore[attr-defined]
+    from nti.schema.testing import verifiably_provides # type:ignore[attr-defined]
+    from nti.schema.testing import not_validated_by # type:ignore[attr-defined]
 
 from hamcrest import assert_that
 from hamcrest import calling
@@ -71,11 +66,13 @@ from hamcrest import is_not
 from hamcrest import none
 from hamcrest import raises
 
+from . import IUnicode
+from . import SchemaLayer
+
 does_not = is_not
 
 __docformat__ = "restructuredtext en"
 
-logger = __import__('logging').getLogger(__name__)
 
 #disable: accessing protected members, too many methods
 #pylint: disable=W0212,R0904,blacklisted-name
@@ -147,9 +144,9 @@ class TestVariant(unittest.TestCase):
         with self.assertRaises(VariantValidationError) as exc:
             syntax_or_lookup.fromObject(object())
 
-        assert_that(exc.exception,
-                    has_property('errors',
-                                 has_length(len(syntax_or_lookup.fields))))
+        assert_that(exc.exception, has_property(
+            'errors',
+            has_length(len(syntax_or_lookup.fields)))) # type:ignore[arg-type]
 
     def test_variant_with_dict_requires_both(self):
         from zope.schema.interfaces import RequiredMissing
@@ -188,19 +185,21 @@ class TestVariant(unittest.TestCase):
 
         # It rejects these by raising a VariantValidationError
         # with the same number of errors as fields
-        for d in {'k': 1}, b'foo', [1, 2, 'b']:
+        for d in {'k': 1}, b'foo', [1, 2, 'b']: # type:ignore[assignment]
             assert_that(d, not_validated_by(variant))
             with self.assertRaises(VariantValidationError) as exc:
                 variant.fromObject(d)
 
-            assert_that(exc.exception, has_property("errors",
-                                                    has_length(len(variant.fields))))
+            assert_that(exc.exception, has_property(
+                "errors",
+                has_length(len(variant.fields)))) # type:ignore[arg-type]
 
             with self.assertRaises(VariantValidationError) as exc:
                 variant.validate(d)
 
-            assert_that(exc.exception, has_property("errors",
-                                                    has_length(len(variant.fields))))
+            assert_that(exc.exception, has_property(
+                "errors",
+                has_length(len(variant.fields)))) # type:ignore[arg-type]
 
         # A name set now is reflected down the line
         variant.__name__ = 'baz'
@@ -234,8 +233,8 @@ class TestVariant(unittest.TestCase):
         assert_that(res, is_(('http://example.com',)))
 
     def test_variant_auto_convert_sequence(self):
-        from zope.schema import List
         from zope.schema import Field
+        from zope.schema import List
 
         string_field = Object(IUnicode)
         list_field = List(string_field)
@@ -264,7 +263,7 @@ class TestVariant(unittest.TestCase):
         assert_that(list_field, does_not(verifiably_provides(IFromObject)))
 
     def test_variant_auto_convert_mapping(self):
-        from zope.schema import Dict as ZDict # pylint:disable=reimported
+        from zope.schema import Dict as ZDict  # pylint:disable=reimported
         from zope.schema import Field
 
         string_field = Object(IUnicode)
@@ -367,7 +366,7 @@ class TestVariant(unittest.TestCase):
         variant = Variant([field], required=False)
         x = variant.fromObject(None)
         assert_that(x, is_(none()))
-        assert_that(field.last_value, is_(42))
+        assert_that(field.last_value, is_(42)) # type:ignore[misc]
 
     def test_missing_value_not_required(self):
         from zope.schema.interfaces import RequiredMissing
@@ -422,14 +421,16 @@ class TestConfiguredVariant(unittest.TestCase):
 
         events = eventtesting.getEvents(IBeforeSequenceAssignedEvent)
         assert_that(events, has_length(1))
-        assert_that(events, contains(has_property('object', [1, '2'])))
+        assert_that(events, contains(
+            has_property('object', [1, '2']))) # type:ignore[arg-type]
 
         eventtesting.clearEvents()
 
         dict_or_list.set(x, {'k': 'v'})
         events = eventtesting.getEvents(IBeforeDictAssignedEvent)
         assert_that(events, has_length(1))
-        assert_that(events, contains(has_property('object', {'k': 'v'})))
+        assert_that(events, contains(
+            has_property('object', {'k': 'v'}))) # type:ignore[arg-type]
 
 class TestValidSet(unittest.TestCase):
 
@@ -470,7 +471,7 @@ class TestUniqueIterable(TestValidSet):
     def _getTargetClass(self):
         return UniqueIterable
 
-    default_min_length = none()
+    default_min_length = none() # type:ignore[assignment]
 
 class SequenceFromObjectMixinMixin(object):
 
@@ -487,7 +488,7 @@ class SequenceFromObjectMixinMixin(object):
 
         # but if we're required, we get a different exception
         field = self._makeOne(required=True, missing_value=None)
-        with self.assertRaises(RequiredMissing):
+        with self.assertRaises(RequiredMissing): # type:ignore[attr-defined]
             field.fromObject(None)
 
         # We can change the type
@@ -642,7 +643,7 @@ class TestFieldValidationMixin(unittest.TestCase):
 
     def test_one_arg(self):
         field = FieldValidationMixin()
-        field.__name__ = 'foo'
+        field.__name__ = 'foo' # type:ignore[attr-defined]
 
         ex = SchemaNotProvided('msg').with_field_and_value(field, 'value')
         # zope.schema 4.7 automatically fills in args
@@ -656,7 +657,7 @@ class TestFieldValidationMixin(unittest.TestCase):
 
     def test_no_arg(self):
         field = FieldValidationMixin()
-        field.__name__ = 'foo'
+        field.__name__ = 'foo' # type:ignore[attr-defined]
 
         ex = SchemaNotProvided().with_field_and_value(field, 'value')
         # zope.schema 4.7 automatically fills in args
@@ -717,7 +718,7 @@ class TestValueTypeAddingDocMixin(unittest.TestCase):
 
         from zope.schema import Field
 
-        class MyField(self._getTargetClass(), Field):
+        class MyField(self._getTargetClass(), Field): # type:ignore[misc]
             _type = object
             accept_types = (list, tuple)
 
@@ -740,6 +741,7 @@ class TestDictFromObject(SequenceFromObjectMixinMixin,
 
     def test_accepts_mapping(self):
         from collections import UserDict
+
         from nti.schema.field import abcs
 
         field = self._makeOne(key_type=Int(), value_type=Float())
@@ -838,6 +840,7 @@ class TestFunctions(unittest.TestCase):
     def test_fixup_Object_field_mapping_requires_key_and_value(self):
         from zope.interface import implementer
         from zope.schema.interfaces import IMapping
+
         from nti.schema.field import _fixup_Object_field
 
         @implementer(IMapping)
@@ -868,3 +871,39 @@ class TestFunctions(unittest.TestCase):
         field.key_type = TextLine()
         _fixup_Object_field(field)
         assert_that(field, verifiably_provides(IFromObject))
+
+
+class TestStrEnumChoice(unittest.TestCase):
+
+    class TestEnum(StrEnum):
+        VALUE = 'value'
+        OTHER = 'value does not match'
+
+    def _makeOne(self, enum=TestEnum, **kwargs):
+        from ..field import StrEnumChoice
+        return StrEnumChoice(enum, **kwargs)
+
+    def test_provides(self):
+        from ..interfaces import IStrEnumChoice
+        assert_that(self._makeOne(),
+                    verifiably_provides(IStrEnumChoice))
+
+    def test_bad_kwargs(self):
+        for bad in (
+            'values',
+            'source',
+            'vocabulary'
+        ):
+            with self.assertRaisesRegex(TypeError, 'Illegal keyword'):
+                self._makeOne(**{bad: None})
+
+    def test_bad_value(self):
+        from zope.schema.interfaces import ConstraintNotSatisfied
+        inst = self._makeOne()
+        with self.assertRaises(ConstraintNotSatisfied):
+            inst.fromUnicode('foo bar')
+
+    def test_good_value(self):
+        inst = self._makeOne()
+        from_unicode = inst.fromUnicode('value does not match')
+        self.assertIs(from_unicode, self.TestEnum.OTHER)
