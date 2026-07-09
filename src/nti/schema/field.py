@@ -625,7 +625,7 @@ class StrEnumChoice(ValidChoice):
     A Choice field that takes its values from
     a :class:`~StrEnum`.
 
-    .. versionadded:: NEXT
+    .. versionadded:: 1.21.0
     """
 
     def __init__(self, enum: type[StrEnum], **kwargs) -> None:

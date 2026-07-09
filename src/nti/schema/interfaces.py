@@ -190,7 +190,7 @@ class IStrEnumChoice(sch_interfaces.IChoice):
     A choice that gets its values and validates them
     against a :class:`~StrEnum`.
 
-    .. versionadded:: NEXT
+    .. versionadded:: 1.21.0
     """
 
     enum = Attribute("The StrEnum subclass given to the constructor.")

@@ -2,7 +2,7 @@
  Changes
 =========
 
-1.21.0 (unreleased)
+1.21.0 (2026-07-09)
 ===================
 
 - Add ``field.StrEnumChoice``, a schema field that uses a ``StrEnum``
