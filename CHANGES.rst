@@ -2,17 +2,19 @@
  Changes
 =========
 
-1.20.2 (unreleased)
+1.21.0 (unreleased)
 ===================
 
-- Nothing changed yet.
+- Add ``field.StrEnumChoice``, a schema field that uses a ``StrEnum``
+  as its vocabulary and returns enum members (e.g., ``Color.RED``)
+  in ``fromUnicode``.
 
 
 1.20.1 (2026-06-25)
 ===================
 
 - Add some minimal typing information. In particular this makes
-  subclasses of ``SchemaConfigured`` for type-friendly.
+  subclasses of ``SchemaConfigured`` more type-friendly.
 
 
 1.20.0 (2026-06-01)

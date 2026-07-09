@@ -185,6 +185,17 @@ class IFromObject(Interface):
         possible.
         """
 
+class IStrEnumChoice(sch_interfaces.IChoice):
+    """
+    A choice that gets its values and validates them
+    against a :class:`~StrEnum`.
+
+    .. versionadded:: NEXT
+    """
+
+    enum = Attribute("The StrEnum subclass given to the constructor.")
+
+
 class IVariant(sch_interfaces.IField, IFromObject):
     """
     Similar to :class:`zope.schema.interfaces.IObject`, but
